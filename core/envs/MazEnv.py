@@ -15,10 +15,12 @@ class MazEnv(gym.Env):
     def __init__(self, render_mode=None, size=15):
         self.size = size  # The size of the square grid
         self.shape = (size, size)
-        self.observation_space = spaces.Discrete(self.size**2)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(self.size, self.size, 3), dtype=np.uint8)
         self.action_space = spaces.Discrete(4)
         
-        self.start_state = np.ravel_multi_index((7, 1), self.shape)
+        print(self.observation_space)
+        
+        self.goal_pos = [9, 10]
         self.goal_state = np.ravel_multi_index((9, 10), self.shape)
         self.goal_state_index = np.unravel_index(self.goal_state, self.shape)
 
@@ -31,8 +33,16 @@ class MazEnv(gym.Env):
         
         self.walls = self._calculate_wall()
         
+        self.possible_starting_states = []
+
+        for i in range(self.size):
+            for j in range(self.size):
+                if self.walls[i, j]==0 and not(i == 9 and j == 10):
+                    self.possible_starting_states.append(np.ravel_multi_index((i, j), self.shape))
+        
+        
         self.P = {}
-        for s in range(self.observation_space.n):
+        for s in range(self.size**2):
             pos = np.unravel_index(s, self.shape)
             self.P[s] = {a: [] for a in range(self.action_space.n)}
             self.P[s][RIGHT] = self._calculate_transition_prob(pos, self._action_to_direction[RIGHT])
@@ -42,6 +52,7 @@ class MazEnv(gym.Env):
         
 
         self.render_mode = render_mode
+        
 
         self.window = None
         self.clock = None
@@ -72,16 +83,8 @@ class MazEnv(gym.Env):
         return True
     
     def _calculate_transition_prob(self, current_pos, action):
-        """
+        # prob, new_state, reward, terminate?
         
-        Args:
-            current_pos (_type_): _description_
-            action (_type_): _description_
-        
-        Retruns:
-            (prob, new_state, reward, is_terminated)
-        
-        """
         new_pos = current_pos + action
         if not self._limit_coordinate(new_pos):
             new_pos = current_pos
@@ -96,29 +99,27 @@ class MazEnv(gym.Env):
 
     def step(self, a): 
         
-        prob, next_state, reward, terminate = self.P[self.s][a]     
+        prob, next_state, reward, terminate = self.P[self.s][a]   
+        self.image[self.current_state_index[0], self.current_state_index[1], 1] = 255
         self.s = next_state
         self.current_state_index = np.unravel_index(self.s, self.shape)
-
+        self.image[self.current_state_index[0], self.current_state_index[1], 1] = 0
         self.last_action = a
         
-        return(int(next_state), reward, terminate, False, {})
+        return(self.image, reward, terminate, False, {})
         
     def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None):
         super().reset(seed=seed)
-        self.s = self.start_state
+        
+        self.image = np.ones((self.size, self.size, 3), dtype='uint8') * 255
+        self.image[self.walls==1, 0] = 0
+        self.image[self.goal_state_index[0], self.goal_state_index[1]] = np.array([0, 255, 0])
+
+        self.s = np.random.choice(np.array(self.possible_starting_states))
         self.last_action = None
         self.current_state_index = np.unravel_index(self.s, self.shape)
-
-        if self.render_mode == "human":
-            self.render()
+        self.image[self.current_state_index[0], self.current_state_index[1], 1] = 0
             
-        return int(self.s), {"prob": 1}
+        return self.image, {"prob": 1}
     
-    def get_state_image(self):
-        image = np.ones((self.size, self.size, 3)) * 255
-        image[self.walls==1, 0] = 0
-        image[self.current_state_index[0], self.current_state_index[1], 1] = 0
-        image[self.goal_state_index[0], self.goal_state_index[1]] = np.array([0, 255, 0])
-        
-        return image.astype('uint8')
+
