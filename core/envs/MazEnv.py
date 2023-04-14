@@ -8,11 +8,14 @@ RIGHT = 1
 UP = 2
 LEFT = 3
 
+GOAL_POS = [5, 3]
+SIZE = 8
+
 class MazEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
     
 
-    def __init__(self, render_mode=None, size=15):
+    def __init__(self, render_mode=None, size=SIZE):
         self.size = size  # The size of the square grid
         self.shape = (size, size)
         self.observation_space = spaces.Box(low=0, high=255, shape=(self.size, self.size, 3), dtype=np.uint8)
@@ -20,8 +23,7 @@ class MazEnv(gym.Env):
         
         print(self.observation_space)
         
-        self.goal_pos = [9, 10]
-        self.goal_state = np.ravel_multi_index((9, 10), self.shape)
+        self.goal_state = np.ravel_multi_index((GOAL_POS[0], GOAL_POS[1]), self.shape)
         self.goal_state_index = np.unravel_index(self.goal_state, self.shape)
 
         self._action_to_direction = {
@@ -37,7 +39,7 @@ class MazEnv(gym.Env):
 
         for i in range(self.size):
             for j in range(self.size):
-                if self.walls[i, j]==0 and not(i == 9 and j == 10):
+                if self.walls[i, j]==0 and not(i == GOAL_POS[0] and j == GOAL_POS[1]):
                     self.possible_starting_states.append(np.ravel_multi_index((i, j), self.shape))
         
         
@@ -59,17 +61,17 @@ class MazEnv(gym.Env):
         
     def _calculate_wall(self):
             walls = np.zeros(self.shape)
-            walls[2, 0:6] = 1
-            walls[2, 8:] = 1
-            walls[2:6, 5] = 1
-            walls[5, 2:7] = 1
-            walls[5, 9:] = 1
-            walls[8:12, 2] = 1
-            walls[11, 2:6] = 1
-            walls[8:, 6] = 1
-            walls[8, 9:] = 1
-            walls[8:12, 9] = 1
-            walls[11, 9:12] = 1
+            # walls[2, 0:6] = 1
+            # walls[2, 8:] = 1
+            # walls[2:6, 5] = 1
+            # walls[5, 2:7] = 1
+            # walls[5, 9:] = 1
+            # walls[8:12, 2] = 1
+            # walls[11, 2:6] = 1
+            # walls[8:, 6] = 1
+            # walls[8, 9:] = 1
+            # walls[8:12, 9] = 1
+            # walls[11, 9:12] = 1
             
             return walls
         
@@ -92,9 +94,9 @@ class MazEnv(gym.Env):
         new_state = np.ravel_multi_index(new_pos, self.shape)
         
         if new_state == self.goal_state:
-            return[1.0, new_state, +1, True]
+            return[1.0, new_state, +10, True]
         
-        return [1.0, new_state, 0, False]
+        return [1.0, new_state, -1, False]
     
 
     def step(self, a): 

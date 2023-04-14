@@ -52,9 +52,9 @@ class Network(nn.Module):
     
     def __init__(self):
         super(Network, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, 3, padding=2)
-        self.conv2 = nn.Conv2d(32, 16, 3, padding=1)
-        self.fc1 = nn.Linear(8*8*16, 32)
+        self.conv1 = nn.Conv2d(3, 32, 3)
+        self.conv2 = nn.Conv2d(32, 16, 3)
+        self.fc1 = nn.Linear(4*4*16, 32)
         self.fta = FTA(tiles=20, bound_low=-2, bound_high=+2, eta=0.4, input_dim=32)
         
         self.q_network_fc1 = nn.Linear(32, 64)
@@ -62,12 +62,14 @@ class Network(nn.Module):
         self.q_network_fc3 = nn.Linear(64, 4)
         
     def forward(self, x):
-        x = x/255
+        x = x/255.0
         x = F.relu(self.conv1(x))
-        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+        # x = F.max_pool2d(F.relu(self.conv2(x)), 2)
+        x = F.relu(self.conv2(x))
         x = torch.flatten(x)
-        x = F.relu(self.fc1(x.reshape(-1, 1024)))
         
+        x = F.relu(self.fc1(x.reshape(-1, 256)))
+                
         x = F.relu(self.q_network_fc1(x))
         x = F.relu(self.q_network_fc2(x))
         x = self.q_network_fc3(x)
@@ -83,7 +85,7 @@ class Agent():
         self.gamma = 0.99
         self.eps_start = 1
         self.eps_end = 0.1
-        self.eps_decay = 200
+        self.eps_decay = 400
         self.target_update = 25
         self.learning_rate = 1e-3
         self.max_episode = 75
@@ -115,8 +117,7 @@ class Agent():
             return self.env.action_space.sample()
         else:
             with torch.no_grad():
-                return self.policy_net(torch.tensor(state.transpose((2, 0, 1)), device=self.device)).argmax().item()
-        # return self.env.action_space.sample()
+                return self.policy_net(torch.tensor(state.transpose((2, 0, 1)), device=self.device)).max(1)[1].item()
 
             
             
@@ -158,7 +159,6 @@ class Agent():
         done_batch = torch.cat(batch.done)
 
         action_values = self.policy_net(state_batch).gather(1, action_batch.unsqueeze(1))
-        
         next_values = self.target_net(next_state_batch).max(1)[0]
         expected_action_values = (~done_batch * next_values * self.gamma) + reward_batch
         

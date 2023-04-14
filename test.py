@@ -4,12 +4,14 @@ from PIL import Image
 
 
 env = gym.make('core:MazEnv-v0')
-model = torch.load('.models/pytorch_2023-04-13_22:37.pt')
+model = torch.load('/home/arya/study/RL/Investigate/.models/pytorch_2023-04-14_10:31.pt')
 
 state, _ = env.reset()
 images = []
-for i in range(10):
-    action = model.policy_net(torch.tensor([state.transpose(2, 0, 1)], device=model.device)).argmax().item()
+for i in range(100):
+    action = model.policy_net(torch.tensor([state.transpose(2, 0, 1)], device=model.device)).max(1)[1].item()
+    # print(action)
+    # action = env.action_space.sample()
     image = Image.fromarray(state, "RGB")
     images.append(image)
     print(action)
