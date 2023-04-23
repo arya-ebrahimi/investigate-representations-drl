@@ -35,12 +35,12 @@ class MazEnv(gym.Env):
         
         self.walls = self._calculate_wall()
         
-        self.possible_starting_states = []
+        self.possible_starting_states = [np.ravel_multi_index((1, 1), self.shape)]
 
-        for i in range(self.size):
-            for j in range(self.size):
-                if self.walls[i, j]==0 and not(i == GOAL_POS[0] and j == GOAL_POS[1]):
-                    self.possible_starting_states.append(np.ravel_multi_index((i, j), self.shape))
+        # for i in range(self.size):
+        #     for j in range(self.size):
+        #         if self.walls[i, j]==0 and not(i == GOAL_POS[0] and j == GOAL_POS[1]):
+        #             self.possible_starting_states.append(np.ravel_multi_index((i, j), self.shape))
         
         
         self.P = {}

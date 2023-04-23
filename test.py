@@ -4,7 +4,7 @@ from PIL import Image
 
 
 env = gym.make('core:MazEnv-v0')
-model = torch.load('/home/arya/study/RL/Investigate/.models/pytorch_2023-04-14_10:31.pt')
+model = torch.load('/home/arya/Study/RL/Investigate/.models/pytorch_2023-04-23_16:38.pt')
 
 state, _ = env.reset()
 images = []
