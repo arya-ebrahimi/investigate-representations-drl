@@ -94,9 +94,9 @@ class MazEnv(gym.Env):
         new_state = np.ravel_multi_index(new_pos, self.shape)
         
         if new_state == self.goal_state:
-            return[1.0, new_state, +10, True]
+            return[1.0, new_state, 1.0, True]
         
-        return [1.0, new_state, -1, False]
+        return [1.0, new_state, 0.0, False]
     
 
     def step(self, a): 

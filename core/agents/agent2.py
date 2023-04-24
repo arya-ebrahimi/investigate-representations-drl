@@ -22,28 +22,18 @@ if is_ipython:
 plt.ion()
 
 Transition = namedtuple('Transition',
-                        ('state', 'action', 'next_state', 'reward', 'done'))
-
+                        ('state', 'action', 'next_state', 'reward'))
 class ReplayMemory(object):
     
     def __init__(self, capacity):
-        self.capacity = capacity
-        self.memory = []
-        self.position = 0
-        self.rng = np.random.default_rng()
+        self.memory = deque([], maxlen=capacity)
 
     def push(self, *args):
-        if len(self.memory) < self.capacity:
-            self.memory.append(None)
-        self.memory[self.position] = Transition(*args)
-        self.position = (self.position + 1) % self.capacity
+        """Save a transition"""
+        self.memory.append(Transition(*args))
 
     def sample(self, batch_size):
-        idx = self.rng.choice(np.arange(len(self.memory)), batch_size, replace=False)
-        res = []
-        for i in idx:
-            res.append(self.memory[i])
-        return res
+        return random.sample(self.memory, batch_size)
 
     def __len__(self):
         return len(self.memory)
@@ -58,7 +48,7 @@ class Network(nn.Module):
         self.fta = FTA(tiles=20, bound_low=-2, bound_high=+2, eta=0.4, input_dim=32)
         
         self.sample_fc = nn.Linear(192, 128)
-        self.q_network_fc1 = nn.Linear(128, 128)
+        self.q_network_fc1 = nn.Linear(128, 64)
         self.q_network_fc2 = nn.Linear(64, 32)
         self.q_network_fc3 = nn.Linear(32, 4)
         
@@ -114,15 +104,18 @@ class Agent():
         
     def select_action(self, state):
         sample = random.random()
-        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * self.steps_done / self.eps_decay)
-        # print(eps_threshold)
+        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
+            math.exp(-1. * self.steps_done / self.eps_decay)
         self.steps_done += 1
-        if sample < eps_threshold:
-            return self.env.action_space.sample()
-        else:
+        if sample > eps_threshold:
             with torch.no_grad():
-                return self.policy_net(torch.tensor(state.transpose((2, 0, 1)), device=self.device)).max(1)[1].item()
-
+                # t.max(1) will return the largest column value of each row.
+                # second column on max result is index of where max element was
+                # found, so we pick action with the larger expected reward.
+                # print(self.policy_net(state).argmax())
+                return self.policy_net(state).max(1)[1].view(1, 1)
+        else:
+            return torch.tensor([[self.env.action_space.sample()]], device=self.device, dtype=torch.long)
             
             
     def plot_rewards(self, show_result=False):
@@ -155,29 +148,49 @@ class Agent():
             return
         transitions = self.memory.sample(self.batch_size)
         batch = Transition(*zip(*transitions))
-        
+
+    # Compute a mask of non-final states and concatenate the batch elements
+    # (a final state would've been the one after which simulation ended)
+        non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
+                                            batch.next_state)), device=self.device, dtype=torch.bool)
+        non_final_next_states = torch.cat([s for s in batch.next_state
+                                                    if s is not None])
         state_batch = torch.cat(batch.state)
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
-        next_state_batch = torch.cat(batch.next_state)
-        done_batch = torch.cat(batch.done)
 
-        action_values = self.policy_net(state_batch).gather(1, action_batch.unsqueeze(1))
+        # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
+        # columns of actions taken. These are the actions which would've been taken
+        # for each batch state according to policy_net
+        # print(state_batch.shape)
+        # print(action_batch.shape)
         
+        state_action_values = self.policy_net(state_batch).gather(1, action_batch)
+
+
         if i % self.print_ratio == 0:
             print(self.policy_net(state_batch))
             print(action_batch.unsqueeze(1))
-            print(action_values)
-            
+            print(state_action_values)
+        # Compute V(s_{t+1}) for all next states.
+        # Expected values of actions for non_final_next_states are computed based
+        # on the "older" target_net; selecting their best reward with max(1)[0].
+        # This is merged based on the mask, such that we'll have either the expected
+        # state value or 0 in case the state was final.
+        next_state_values = torch.zeros(self.batch_size, device=self.device)
         with torch.no_grad():
-            next_values = self.target_net(next_state_batch).max(1)[0]
-        
-        expected_action_values = (~done_batch * next_values * self.gamma) + reward_batch
-        
-        loss = self.loss_fn(action_values, expected_action_values.unsqueeze(1))
-        
+            next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0]
+        # Compute the expected Q values
+        expected_state_action_values = (next_state_values * self.gamma) + reward_batch
+
+        # Compute Huber loss
+        criterion = nn.SmoothL1Loss()
+        loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
+
+        # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
+        # In-place gradient clipping
         torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
 
@@ -192,16 +205,25 @@ class Agent():
   
     def train(self):
         for i in trange(self.num_episodes):
-            
-            state, _ = self.env.reset()
-            done = False
             reward_in_episode = 0
+            state, info = self.env.reset()
+            state = state.reshape((192))
+            state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
             for t in count():
-                action = self.select_action(state=state)
-                next_state, reward, terminated, truncated, _ = self.env.step(action)
+                action = self.select_action(state)
+                # print(action.item())
+                observation, reward, terminated, truncated, _ = self.env.step(action.item())
+                observation = observation.reshape((192))
+                reward = torch.tensor([reward], device=self.device)
                 done = terminated or truncated
-                self._remember(state.transpose((2, 0, 1)), action, next_state.transpose((2, 0, 1)), reward, done)
-                
+
+                if terminated:
+                    next_state = None
+                else:
+                    next_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
+
+                # Store the transition in memory
+                self.memory.push(state, action, next_state, reward)
                 self.optimize(i)
                 state = next_state
                 reward_in_episode += reward

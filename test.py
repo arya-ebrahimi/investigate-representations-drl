@@ -1,24 +1,29 @@
 import torch
 import gymnasium as gym
 from PIL import Image
-from core.agents.agent import *
+from core.agents.agent2 import *
 
+model_path = '/home/arya/Desktop/Investigate-Representations-DeepRL/.models/pytorch_2023-04-25_01:45.pt'
 env = gym.make('core:MazEnv-v0')
 model = Agent(env=env)
-model.target_net.load_state_dict(torch.load('/home/arya/Desktop/Investigate-Representations-DeepRL/.models/pytorch_2023-04-24_22:41.pt'))
+model.target_net.load_state_dict(torch.load(model_path))
 
 state, _ = env.reset()
 images = []
 for i in range(100):
-    action = model.policy_net(torch.tensor([state.transpose(2, 0, 1)], device=model.device)).max(1)[1].item()
+    state = state.reshape((192))
+    # print(model.target_net(torch.tensor(state, device=model.device)).argmax().item())
+    action = model.target_net(torch.tensor(state, device=model.device)).argmax().item()
     # print(action)
     # action = env.action_space.sample()
-    image = Image.fromarray(state, "RGB")
+    image = Image.fromarray(state.reshape((8, 8, 3)), "RGB")
     images.append(image)
     print(action)
     next_state, reward, terminated, truncated, _ = env.step(action)
     
     done = terminated or truncated
+    if done:
+        break
     state = next_state
 
 images[0].save('pillow_imagedraw.gif',

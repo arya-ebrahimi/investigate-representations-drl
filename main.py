@@ -1,7 +1,7 @@
 import numpy as np
 import gymnasium as gym
 from PIL import Image
-from core.agents.agent import *
+from core.agents.agent2 import *
 import torch
 
 # DOWN = 0
