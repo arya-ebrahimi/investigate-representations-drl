@@ -69,6 +69,7 @@ class Network(nn.Module):
         x = torch.flatten(x)
         
         x = F.relu(self.fc1(x.reshape(-1, 256)))
+        
                 
         x = F.relu(self.q_network_fc1(x))
         x = F.relu(self.q_network_fc2(x))
