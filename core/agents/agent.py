@@ -79,7 +79,7 @@ class Agent():
     def __init__(self, env):
         self.env = env
         self.num_episodes = 75000
-        self.save_ratio=1000
+        self.save_ratio=500
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.batch_size = 256
         self.gamma = 0.99
@@ -161,6 +161,7 @@ class Agent():
         done_batch = torch.cat(batch.done)
 
         action_values = self.policy_net(state_batch).gather(1, action_batch.unsqueeze(1))
+        
         
         with torch.no_grad():
             next_values = self.target_net(next_state_batch).max(1)[0]

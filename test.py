@@ -1,10 +1,11 @@
 import torch
 import gymnasium as gym
 from PIL import Image
-
+from core.agents.agent import *
 
 env = gym.make('core:MazEnv-v0')
-model = torch.load('/home/arya/Study/RL/Investigate/.models/pytorch_2023-04-23_16:38.pt')
+model = Agent(env=env)
+model.target_net.load_state_dict(torch.load('/home/arya/Desktop/Investigate-Representations-DeepRL/.models/pytorch_2023-04-24_22:41.pt'))
 
 state, _ = env.reset()
 images = []
