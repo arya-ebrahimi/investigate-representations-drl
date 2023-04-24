@@ -57,9 +57,9 @@ class Network(nn.Module):
         self.fc1 = nn.Linear(4*4*16, 32)
         self.fta = FTA(tiles=20, bound_low=-2, bound_high=+2, eta=0.4, input_dim=32)
         
-        self.q_network_fc1 = nn.Linear(32, 64)
-        self.q_network_fc2 = nn.Linear(64, 64)
-        self.q_network_fc3 = nn.Linear(64, 4)
+        self.q_network_fc1 = nn.Linear(32, 32)
+        self.q_network_fc2 = nn.Linear(32, 32)
+        self.q_network_fc3 = nn.Linear(32, 4)
         
     def forward(self, x):
         x = x/255.0
@@ -69,7 +69,6 @@ class Network(nn.Module):
         x = torch.flatten(x)
         
         x = F.relu(self.fc1(x.reshape(-1, 256)))
-        
                 
         x = F.relu(self.q_network_fc1(x))
         x = F.relu(self.q_network_fc2(x))
@@ -82,16 +81,17 @@ class Agent():
         self.num_episodes = 75000
         self.save_ratio=1000
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.batch_size = 128
+        self.batch_size = 256
         self.gamma = 0.99
         self.eps_start = 1
-        self.eps_end = 0.1
-        self.eps_decay = 400
-        self.target_update = 25
-        self.learning_rate = 1e-3
-        self.max_episode = 75
+        self.eps_end = 0.05
+        self.eps_decay = 10000
+        self.target_update = 1000
+        self.learning_rate = 0.000025
+        self.max_episode = 50
         self.id = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
         self.model_dir = Path('.models')
+        self.tau = 0.005
 
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
@@ -105,7 +105,7 @@ class Agent():
         self.loss_fn = nn.SmoothL1Loss()
         self.optimizer = torch.optim.AdamW(self.policy_net.parameters(), lr=self.learning_rate, amsgrad=True)
         
-        self.memory = ReplayMemory(10000)
+        self.memory = ReplayMemory(1000000)
         
         self.steps_done = 0
         self.reward_in_episode = []
@@ -113,6 +113,7 @@ class Agent():
     def select_action(self, state):
         sample = random.random()
         eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * self.steps_done / self.eps_decay)
+        # print(eps_threshold)
         self.steps_done += 1
         if sample < eps_threshold:
             return self.env.action_space.sample()
@@ -160,7 +161,10 @@ class Agent():
         done_batch = torch.cat(batch.done)
 
         action_values = self.policy_net(state_batch).gather(1, action_batch.unsqueeze(1))
-        next_values = self.target_net(next_state_batch).max(1)[0]
+        
+        with torch.no_grad():
+            next_values = self.target_net(next_state_batch).max(1)[0]
+        
         expected_action_values = (~done_batch * next_values * self.gamma) + reward_batch
         
         loss = self.loss_fn(action_values, expected_action_values.unsqueeze(1))
@@ -211,7 +215,8 @@ class Agent():
             
             if i % self.save_ratio == 0:
                 # self._save()
-                torch.save(self, f'{self.model_dir}/pytorch_{self.id}.pt')
+                torch.save(self.target_net.state_dict(), f'{self.model_dir}/pytorch_{self.id}.pt')
+                
         self.plot_rewards(show_result=True)
         plt.ioff()
         plt.show()
