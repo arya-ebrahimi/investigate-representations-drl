@@ -77,7 +77,7 @@ class Agent():
         self.gamma = 0.99
         self.eps_start = 1
         self.eps_end = 0.05
-        self.eps_decay = 10000
+        self.eps_decay = 20000
         self.target_update = 1000
         self.learning_rate = 0.0001
         self.horizon = 100
