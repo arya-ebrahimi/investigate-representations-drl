@@ -48,19 +48,21 @@ class Network(nn.Module):
         self.fta = FTA(tiles=20, bound_low=-2, bound_high=+2, eta=0.4, input_dim=32)
         
         self.sample_fc = nn.Linear(192, 128)
-        self.q_network_fc1 = nn.Linear(128, 64)
-        self.q_network_fc2 = nn.Linear(64, 32)
+        self.q_network_fc1 = nn.Linear(32, 32)
+        self.q_network_fc2 = nn.Linear(32, 32)
         self.q_network_fc3 = nn.Linear(32, 4)
         
     def forward(self, x):
         x = x/255.0
-        # x = F.relu(self.conv1(x))
+        # print(x.shape)
+        x = F.relu(self.conv1(x))
         # x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-        # x = F.relu(self.conv2(x))
-        # x = torch.flatten(x)
-        
-        # x = F.relu(self.fc1(x.reshape(-1, 256)))
-        x = F.relu(self.sample_fc(x))
+        # print(x.shape)
+        x = F.relu(self.conv2(x))
+        x = torch.flatten(x)
+        x = x.reshape((-1, 256))
+        x = F.relu(self.fc1(x))
+        # x = F.relu(self.sample_fc(x))
         x = F.relu(self.q_network_fc1(x))
         x = F.relu(self.q_network_fc2(x))
         x = self.q_network_fc3(x)
@@ -78,7 +80,7 @@ class Agent():
         self.eps_end = 0.05
         self.eps_decay = 10000
         self.target_update = 1000
-        self.learning_rate = 0.00005
+        self.learning_rate = 0.0001
         self.max_episode = 50
         self.id = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
         self.model_dir = Path('.models')
@@ -207,16 +209,17 @@ class Agent():
         for i in trange(self.num_episodes):
             reward_in_episode = 0
             state, info = self.env.reset()
-            state = state.reshape((192))
+            state = state.transpose((2, 0, 1))
             state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
             for t in count():
                 action = self.select_action(state)
                 # print(action.item())
                 observation, reward, terminated, truncated, _ = self.env.step(action.item())
-                observation = observation.reshape((192))
+                # observation = observation.reshape((192))
+                observation = observation.transpose((2, 0, 1))
+
                 reward = torch.tensor([reward], device=self.device)
                 done = terminated or truncated
-
                 if terminated:
                     next_state = None
                 else:
@@ -228,19 +231,19 @@ class Agent():
                 state = next_state
                 reward_in_episode += reward
 
-                # target_net_state_dict = self.target_net.state_dict()
-                # policy_net_state_dict = self.policy_net.state_dict()
-                # for key in policy_net_state_dict:
-                #     target_net_state_dict[key] = policy_net_state_dict[key]*self.tau + target_net_state_dict[key]*(1-self.tau)
-                # self.target_net.load_state_dict(target_net_state_dict)
+                target_net_state_dict = self.target_net.state_dict()
+                policy_net_state_dict = self.policy_net.state_dict()
+                for key in policy_net_state_dict:
+                    target_net_state_dict[key] = policy_net_state_dict[key]*self.tau + target_net_state_dict[key]*(1-self.tau)
+                self.target_net.load_state_dict(target_net_state_dict)
                 
                 if done or t > self.max_episode:
                     self.reward_in_episode.append(reward_in_episode)
                     self.plot_rewards()
                     break
                 
-            if i % self.target_update == 0:
-                self.target_net.load_state_dict(self.policy_net.state_dict())
+            # if i % self.target_update == 0:
+            #     self.target_net.load_state_dict(self.policy_net.state_dict())
             
             if i % self.save_ratio == 0:
                 # self._save()
