@@ -8,8 +8,8 @@ RIGHT = 1
 UP = 2
 LEFT = 3
 
-GOAL_POS = [5, 3]
-SIZE = 8
+GOAL_POS = [9, 10]
+SIZE = 14
 
 class MazEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
@@ -35,12 +35,12 @@ class MazEnv(gym.Env):
         
         self.walls = self._calculate_wall()
         
-        self.possible_starting_states = [np.ravel_multi_index((1, 1), self.shape)]
-
-        # for i in range(self.size):
-        #     for j in range(self.size):
-        #         if self.walls[i, j]==0 and not(i == GOAL_POS[0] and j == GOAL_POS[1]):
-        #             self.possible_starting_states.append(np.ravel_multi_index((i, j), self.shape))
+        # self.possible_starting_states = [np.ravel_multi_index((1, 1), self.shape)]
+        self.possible_starting_states = []
+        for i in range(self.size):
+            for j in range(self.size):
+                if self.walls[i, j]==0 and not(i == GOAL_POS[0] and j == GOAL_POS[1]):
+                    self.possible_starting_states.append(np.ravel_multi_index((i, j), self.shape))
         
         
         self.P = {}
@@ -61,17 +61,17 @@ class MazEnv(gym.Env):
         
     def _calculate_wall(self):
             walls = np.zeros(self.shape)
-            # walls[2, 0:6] = 1
-            # walls[2, 8:] = 1
-            # walls[2:6, 5] = 1
-            # walls[5, 2:7] = 1
-            # walls[5, 9:] = 1
-            # walls[8:12, 2] = 1
-            # walls[11, 2:6] = 1
-            # walls[8:, 6] = 1
-            # walls[8, 9:] = 1
-            # walls[8:12, 9] = 1
-            # walls[11, 9:12] = 1
+            walls[2, 0:6] = 1
+            walls[2, 8:] = 1
+            walls[2:6, 5] = 1
+            walls[5, 2:7] = 1
+            walls[5, 9:] = 1
+            walls[8:12, 2] = 1
+            walls[11, 2:6] = 1
+            walls[8:, 6] = 1
+            walls[8, 9:] = 1
+            walls[8:12, 9] = 1
+            walls[11, 9:12] = 1
             
             return walls
         

@@ -43,14 +43,13 @@ class Network(nn.Module):
     def __init__(self):
         super(Network, self).__init__()
         self.conv1 = nn.Conv2d(3, 32, 3)
-        self.conv2 = nn.Conv2d(32, 16, 3)
-        self.fc1 = nn.Linear(4*4*16, 32)
+        self.conv2 = nn.Conv2d(32, 16, 5)
+        self.fc1 = nn.Linear(8*8*16, 32)
         self.fta = FTA(tiles=20, bound_low=-2, bound_high=+2, eta=0.4, input_dim=32)
         
-        self.sample_fc = nn.Linear(192, 128)
-        self.q_network_fc1 = nn.Linear(32, 32)
-        self.q_network_fc2 = nn.Linear(32, 32)
-        self.q_network_fc3 = nn.Linear(32, 4)
+        self.q_network_fc1 = nn.Linear(32, 64)
+        self.q_network_fc2 = nn.Linear(64, 64)
+        self.q_network_fc3 = nn.Linear(64, 4)
         
     def forward(self, x):
         x = x/255.0
@@ -60,7 +59,7 @@ class Network(nn.Module):
         # print(x.shape)
         x = F.relu(self.conv2(x))
         x = torch.flatten(x)
-        x = x.reshape((-1, 256))
+        x = x.reshape((-1, 1024))
         x = F.relu(self.fc1(x))
         # x = F.relu(self.sample_fc(x))
         x = F.relu(self.q_network_fc1(x))
@@ -81,7 +80,7 @@ class Agent():
         self.eps_decay = 10000
         self.target_update = 1000
         self.learning_rate = 0.0001
-        self.max_episode = 50
+        self.horizon = 100
         self.id = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
         self.model_dir = Path('.models')
         self.tau = 0.005
@@ -170,10 +169,12 @@ class Agent():
         state_action_values = self.policy_net(state_batch).gather(1, action_batch)
 
 
-        if i % self.print_ratio == 0:
-            print(self.policy_net(state_batch))
-            print(action_batch.unsqueeze(1))
-            print(state_action_values)
+        # if i % self.print_ratio == 0:
+        #     print(self.policy_net(state_batch))
+        #     print(action_batch.unsqueeze(1))
+        #     print(state_action_values)
+        
+        
         # Compute V(s_{t+1}) for all next states.
         # Expected values of actions for non_final_next_states are computed based
         # on the "older" target_net; selecting their best reward with max(1)[0].
@@ -237,7 +238,7 @@ class Agent():
                     target_net_state_dict[key] = policy_net_state_dict[key]*self.tau + target_net_state_dict[key]*(1-self.tau)
                 self.target_net.load_state_dict(target_net_state_dict)
                 
-                if done or t > self.max_episode:
+                if done or t > self.horizon:
                     self.reward_in_episode.append(reward_in_episode)
                     self.plot_rewards()
                     break
