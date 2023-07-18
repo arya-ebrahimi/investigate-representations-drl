@@ -3,7 +3,7 @@ import gymnasium as gym
 from PIL import Image
 from core.agents.agent2 import *
 
-model_path = '/home/arya/Desktop/Investigate-Representations-DeepRL/.models/pytorch_2023-04-26_00:29.pt'
+model_path = '/home/arya/Desktop/Investigate-Representations-DeepRL/.models/pytorch_2023-04-26_00:48.pt'
 env = gym.make('core:MazEnv-v0')
 model = Agent(env=env)
 model.target_net.load_state_dict(torch.load(model_path))

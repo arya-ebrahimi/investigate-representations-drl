@@ -47,7 +47,7 @@ class Network(nn.Module):
         self.fc1 = nn.Linear(8*8*16, 32)
         self.fta = FTA(tiles=20, bound_low=-2, bound_high=+2, eta=0.4, input_dim=32)
         
-        self.q_network_fc1 = nn.Linear(32, 64)
+        self.q_network_fc1 = nn.Linear(640, 64)
         self.q_network_fc2 = nn.Linear(64, 64)
         self.q_network_fc3 = nn.Linear(64, 4)
         
@@ -60,7 +60,7 @@ class Network(nn.Module):
         x = F.relu(self.conv2(x))
         x = torch.flatten(x)
         x = x.reshape((-1, 1024))
-        x = F.relu(self.fc1(x))
+        x = self.fta(self.fc1(x))
         # x = F.relu(self.sample_fc(x))
         x = F.relu(self.q_network_fc1(x))
         x = F.relu(self.q_network_fc2(x))
@@ -70,7 +70,7 @@ class Network(nn.Module):
 class Agent():
     def __init__(self, env):
         self.env = env
-        self.num_episodes = 75000
+        self.num_episodes = 150000
         self.save_ratio=500
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.batch_size = 128
