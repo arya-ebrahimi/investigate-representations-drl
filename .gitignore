@@ -3,3 +3,4 @@ core/agents/__pycache__
 .models
 core/activations/__pycache__
 core/agents/__pycache__
+outputs
