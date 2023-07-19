@@ -1,7 +1,7 @@
 import torch
 import gymnasium as gym
 from PIL import Image
-from core.agents.agent import *
+from core.agent import *
 
 model_path = '/home/arya/Desktop/Investigate-Representations-DeepRL/.models/pytorch_2023-04-26_00:48.pt'
 env = gym.make('core:MazEnv-v0')

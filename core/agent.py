@@ -22,34 +22,21 @@ class Agent():
     def __init__(self, env, args):
         self.args = args
         self.env = env
-        self.num_episodes = args.num_episodes
-        self.save_ratio=args.save_ratio
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.batch_size = args.batch_size
-        self.gamma = args.gamma
-        self.eps_start = args.eps_start
-        self.eps_end = args.eps_end
-        self.eps_decay = args.eps_decay
-        self.target_update = args.target_update
-        self.learning_rate = args.learning_rate
-        self.horizon = args.horizon
         self.id = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
         self.model_dir = Path('.models')
-        self.tau = args.tau
-        self.print_ratio = args.print_ratio
-        self.use_fta = args.use_fta
         
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
             
         self.action_space = env.action_space.n
         
-        self.policy_net = Network(self.use_fta).to(self.device)
-        self.target_net = Network(self.use_fta).to(self.device)
+        self.policy_net = Network(self.args.use_fta).to(self.device)
+        self.target_net = Network(self.args.use_fta).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         
         self.loss_fn = nn.SmoothL1Loss()
-        self.optimizer = torch.optim.AdamW(self.policy_net.parameters(), lr=self.learning_rate, amsgrad=True)
+        self.optimizer = torch.optim.AdamW(self.policy_net.parameters(), lr=self.args.learning_rate, amsgrad=True)
         
         self.memory = ReplayMemory(1000000)
         
@@ -58,8 +45,8 @@ class Agent():
         
     def select_action(self, state):
         sample = random.random()
-        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
-            math.exp(-1. * self.steps_done / self.eps_decay)
+        eps_threshold = self.args.eps_end + (self.args.eps_start - self.args.eps_end) * \
+            math.exp(-1. * self.steps_done / self.args.eps_decay)
         self.steps_done += 1
         if sample > eps_threshold:
             with torch.no_grad():
@@ -97,9 +84,9 @@ class Agent():
                 display.display(plt.gcf())
                 
     def optimize(self, i):
-        if len(self.memory) < self.batch_size:
+        if len(self.memory) < self.args.batch_size:
             return
-        transitions = self.memory.sample(self.batch_size)
+        transitions = self.memory.sample(self.args.batch_size)
         batch = Transition(*zip(*transitions))
 
     # Compute a mask of non-final states and concatenate the batch elements
@@ -121,7 +108,7 @@ class Agent():
         state_action_values = self.policy_net(state_batch).gather(1, action_batch)
 
 
-        # if i % self.print_ratio == 0:
+        # if i % self.args.print_ratio == 0:
         #     print(self.policy_net(state_batch))
         #     print(action_batch.unsqueeze(1))
         #     print(state_action_values)
@@ -132,11 +119,11 @@ class Agent():
         # on the "older" target_net; selecting their best reward with max(1)[0].
         # This is merged based on the mask, such that we'll have either the expected
         # state value or 0 in case the state was final.
-        next_state_values = torch.zeros(self.batch_size, device=self.device)
+        next_state_values = torch.zeros(self.args.batch_size, device=self.device)
         with torch.no_grad():
             next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0]
         # Compute the expected Q values
-        expected_state_action_values = (next_state_values * self.gamma) + reward_batch
+        expected_state_action_values = (next_state_values * self.args.gamma) + reward_batch
 
         # Compute Huber loss
         criterion = nn.SmoothL1Loss()
@@ -159,7 +146,7 @@ class Agent():
         
   
     def train(self):
-        for i in trange(self.num_episodes):
+        for i in trange(self.args.num_episodes):
             reward_in_episode = 0
             state, info = self.env.reset()
             state = state.transpose((2, 0, 1))
@@ -187,19 +174,18 @@ class Agent():
                 target_net_state_dict = self.target_net.state_dict()
                 policy_net_state_dict = self.policy_net.state_dict()
                 for key in policy_net_state_dict:
-                    target_net_state_dict[key] = policy_net_state_dict[key]*self.tau + target_net_state_dict[key]*(1-self.tau)
+                    target_net_state_dict[key] = policy_net_state_dict[key]*self.args.tau + target_net_state_dict[key]*(1-self.args.tau)
                 self.target_net.load_state_dict(target_net_state_dict)
                 
-                if done or t > self.horizon:
+                if done or t > self.args.horizon:
                     self.reward_in_episode.append(reward_in_episode)
                     self.plot_rewards()
                     break
                 
-            # if i % self.target_update == 0:
+            # if i % self.args.target_update == 0:
             #     self.target_net.load_state_dict(self.policy_net.state_dict())
             
-            if i % self.save_ratio == 0:
-                # self._save()
+               # self._save()
                 torch.save(self.target_net.state_dict(), f'{self.model_dir}/pytorch_{self.id}.pt')
                 
         self.plot_rewards(show_result=True)

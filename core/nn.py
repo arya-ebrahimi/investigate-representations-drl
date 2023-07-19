@@ -34,7 +34,6 @@ class Network(nn.Module):
         else:
             x = F.relu(self.fc1(x))
         
-        print(x.shape)
         x = F.relu(self.q_network_fc1(x))
         x = F.relu(self.q_network_fc2(x))
         x = self.q_network_fc3(x)

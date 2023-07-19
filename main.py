@@ -1,7 +1,7 @@
 import numpy as np
 import gymnasium as gym
 from PIL import Image
-from core.agents.agent import *
+from core.agent import *
 import torch
 import hydra
 
@@ -10,7 +10,7 @@ import hydra
 # UP = 2
 # LEFT = 3
 
-@hydra.main(config_path="config", config_name="config.yaml")
+@hydra.main(config_path="config", config_name="config.yaml", version_base=None)
 def main(args):
     env = gym.make('core:MazEnv-v0')
     env.reset()
