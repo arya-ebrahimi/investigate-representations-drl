@@ -31,8 +31,8 @@ class Agent():
             
         self.action_space = env.action_space.n
         
-        self.policy_net = Network(self.args.use_fta).to(self.device)
-        self.target_net = Network(self.args.use_fta).to(self.device)
+        self.policy_net = Network(self.args.use_fta, self.args.use_aux).to(self.device)
+        self.target_net = Network(self.args.use_fta, self.args.use_aux).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         
         self.loss_fn = nn.SmoothL1Loss()
@@ -54,7 +54,7 @@ class Agent():
                 # second column on max result is index of where max element was
                 # found, so we pick action with the larger expected reward.
 
-                return self.policy_net(state).max(1)[1].view(1, 1)
+                return self.policy_net(state)[0].max(1)[1].view(1, 1)
         else:
             return torch.tensor([[self.env.action_space.sample()]], device=self.device, dtype=torch.long)
             
@@ -105,8 +105,8 @@ class Agent():
         # print(state_batch.shape)
         # print(action_batch.shape)
         
-        state_action_values = self.policy_net(state_batch).gather(1, action_batch)
-
+        net_return = self.policy_net(state_batch)
+        state_action_values = net_return[0].gather(1, action_batch)
 
         # if i % self.args.print_ratio == 0:
         #     print(self.policy_net(state_batch))
@@ -121,14 +121,22 @@ class Agent():
         # state value or 0 in case the state was final.
         next_state_values = torch.zeros(self.args.batch_size, device=self.device)
         with torch.no_grad():
-            next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0]
+            next_state_values[non_final_mask] = self.target_net(non_final_next_states)[0].max(1)[0]
         # Compute the expected Q values
         expected_state_action_values = (next_state_values * self.args.gamma) + reward_batch
 
         # Compute Huber loss
-        criterion = nn.SmoothL1Loss()
+        criterion = nn.MSELoss()
         loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
+        if self.args.use_aux != None:
+            if self.args.use_aux == 'ir':
+                aux_return = net_return[1]
+                
+                aux_loss = nn.MSELoss()
+                
+                loss = loss + 0.0001 * aux_loss(aux_return, state_batch)
+                
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
@@ -153,9 +161,7 @@ class Agent():
             state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
             for t in count():
                 action = self.select_action(state)
-                # print(action.item())
                 observation, reward, terminated, truncated, _ = self.env.step(action.item())
-                # observation = observation.reshape((192))
                 observation = observation.transpose((2, 0, 1))
 
                 reward = torch.tensor([reward], device=self.device)
@@ -171,22 +177,25 @@ class Agent():
                 state = next_state
                 reward_in_episode += reward
 
-                target_net_state_dict = self.target_net.state_dict()
-                policy_net_state_dict = self.policy_net.state_dict()
-                for key in policy_net_state_dict:
-                    target_net_state_dict[key] = policy_net_state_dict[key]*self.args.tau + target_net_state_dict[key]*(1-self.args.tau)
-                self.target_net.load_state_dict(target_net_state_dict)
+                if self.args.soft_target_update:
+                    target_net_state_dict = self.target_net.state_dict()
+                    policy_net_state_dict = self.policy_net.state_dict()
+                    for key in policy_net_state_dict:
+                        target_net_state_dict[key] = policy_net_state_dict[key]*self.args.tau + target_net_state_dict[key]*(1-self.args.tau)
+                    self.target_net.load_state_dict(target_net_state_dict)
                 
                 if done or t > self.args.horizon:
                     self.reward_in_episode.append(reward_in_episode)
                     self.plot_rewards()
                     break
-                
-            # if i % self.args.target_update == 0:
-            #     self.target_net.load_state_dict(self.policy_net.state_dict())
             
-               # self._save()
-                torch.save(self.target_net.state_dict(), f'{self.model_dir}/pytorch_{self.id}.pt')
+            if not self.args.soft_target_update:
+                if i % self.args.target_update == 0:
+                    self.target_net.load_state_dict(self.policy_net.state_dict())
+            
+            if i % self.args.save_ratio:
+                if self.args.save_model:
+                    torch.save(self.target_net.state_dict(), f'{self.model_dir}/pytorch_{self.id}.pt')
                 
         self.plot_rewards(show_result=True)
         plt.ioff()

@@ -12,3 +12,5 @@ tau: 0.005
 print_ratio: 100
 save_model: False
 use_fta: True
+soft_target_update: True
+use_aux: "ir"
