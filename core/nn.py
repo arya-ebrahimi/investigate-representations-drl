@@ -42,7 +42,7 @@ class Network(nn.Module):
         else:
             self.q_network_fc1 = nn.Linear(32, 64)
 
-        if self.use_aux != None:
+        if self.use_aux != "no_aux":
             if self.use_aux == 'ir':
                 self.aux_network = InputReconstruction(use_fta=self.use_fta)
         
@@ -65,7 +65,7 @@ class Network(nn.Module):
         
         # auxilary network
         aux = None
-        if self.use_aux:
+        if self.use_aux != "no_aux":
             aux = self.aux_network(x)
         
         # value network
