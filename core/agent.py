@@ -99,8 +99,9 @@ class Agent():
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
         
-        next_action_batch = torch.cat(batch.next_action)
-        next_state_batch = torch.cat(batch.next_state)
+        if self.args.use_aux == 'sf':
+            next_action_batch = torch.cat(batch.next_action)
+            next_state_batch = torch.cat(batch.next_state)
         # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
         # columns of actions taken. These are the actions which would've been taken
         # for each batch state according to policy_net
@@ -142,11 +143,11 @@ class Agent():
                 aux_return = net_return[1]
                 state_rep = net_return[2]
                 with torch.no_grad():
-                    next_state_aux_return = self.target_net(next_state_batch, next_action_batch)[1]
+                    next_state_aux_return = self.policy_net(next_state_batch, next_action_batch)[1]
 
                 aux_loss = nn.MSELoss()
-                
-                loss = loss + aux_loss(aux_return, state_rep + self.args.gamma * next_state_aux_return)
+
+                loss = loss + 0.01 * aux_loss(aux_return, state_rep + self.args.gamma * next_state_aux_return)
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
