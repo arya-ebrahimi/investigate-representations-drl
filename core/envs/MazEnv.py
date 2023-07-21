@@ -8,14 +8,21 @@ RIGHT = 1
 UP = 2
 LEFT = 3
 
-GOAL_POS = [9, 10]
 SIZE = 15
 
 class MazEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
     
 
-    def __init__(self, render_mode=None, size=SIZE):
+    def __init__(self, render_mode=None, size=SIZE, goal_mode=0):
+        
+        if goal_mode == 0:
+            goal_pose = [9, 10]
+        elif goal_mode == 1:
+            goal_pose = [9, 11]
+        elif goal_mode == 2:
+            goal_pose = [1, 4]
+        
         self.size = size  # The size of the square grid
         self.shape = (size, size)
         self.observation_space = spaces.Box(low=0, high=255, shape=(self.size, self.size, 3), dtype=np.uint8)
@@ -23,7 +30,7 @@ class MazEnv(gym.Env):
         
         print(self.observation_space)
         
-        self.goal_state = np.ravel_multi_index((GOAL_POS[0], GOAL_POS[1]), self.shape)
+        self.goal_state = np.ravel_multi_index((goal_pose[0], goal_pose[1]), self.shape)
         self.goal_state_index = np.unravel_index(self.goal_state, self.shape)
 
         self._action_to_direction = {
@@ -39,7 +46,7 @@ class MazEnv(gym.Env):
         self.possible_starting_states = []
         for i in range(self.size):
             for j in range(self.size):
-                if self.walls[i, j]==0 and not(i == GOAL_POS[0] and j == GOAL_POS[1]):
+                if self.walls[i, j]==0 and not(i == goal_pose[0] and j == goal_pose[1]):
                     self.possible_starting_states.append(np.ravel_multi_index((i, j), self.shape))
         
         

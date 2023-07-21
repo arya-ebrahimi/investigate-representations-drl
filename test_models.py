@@ -4,7 +4,7 @@ import torch
 
 device = 'cuda'
 
-model1 = Network(True, 'ir').to(device=device)
+model1 = Network(True, 'reward').to(device=device)
 
 t = torch.rand((128, 3, 15, 15)).to(device=device)
 print(t.shape)

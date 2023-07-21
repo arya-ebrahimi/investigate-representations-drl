@@ -12,7 +12,7 @@ import hydra
 
 @hydra.main(config_path="config", config_name="config.yaml", version_base=None)
 def main(args):
-    env = gym.make('core:MazEnv-v0')
+    env = gym.make('core:MazEnv-v0', goal_mode=args.goal_mode)
     env.reset()
     agent = Agent(env=env, args=args)
     agent.train()
