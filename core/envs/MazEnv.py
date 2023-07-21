@@ -9,7 +9,7 @@ UP = 2
 LEFT = 3
 
 GOAL_POS = [9, 10]
-SIZE = 14
+SIZE = 15
 
 class MazEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
@@ -68,7 +68,7 @@ class MazEnv(gym.Env):
             walls[5, 9:] = 1
             walls[8:12, 2] = 1
             walls[11, 2:6] = 1
-            walls[8:, 6] = 1
+            walls[8:, 5] = 1
             walls[8, 9:] = 1
             walls[8:12, 9] = 1
             walls[11, 9:12] = 1
