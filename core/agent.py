@@ -98,14 +98,14 @@ class Agent():
         state_batch = torch.cat(batch.state)
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
-
+        
         # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
         # columns of actions taken. These are the actions which would've been taken
         # for each batch state according to policy_net
         # print(state_batch.shape)
         # print(action_batch.shape)
         
-        net_return = self.policy_net(state_batch)
+        net_return = self.policy_net(state_batch, action_batch)
         state_action_values = net_return[0].gather(1, action_batch)
         
         # Compute V(s_{t+1}) for all next states.
@@ -159,7 +159,14 @@ class Agent():
             state = state.transpose((2, 0, 1))
             state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
             for t in count():
+                                
                 action = self.select_action(state)
+                if self.args.use_aux == 'sf':
+                    if t > 0:
+                        self.memory.push(previous_state, previous_action, state, reward, action)
+                        self.optimize(i)
+
+    
                 observation, reward, terminated, truncated, _ = self.env.step(action.item())
                 observation = observation.transpose((2, 0, 1))
 
@@ -171,8 +178,12 @@ class Agent():
                     next_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
 
                 # Store the transition in memory
-                self.memory.push(state, action, next_state, reward)
-                self.optimize(i)
+                if self.args.use_aux != 'sf':
+                    self.memory.push(state, action, next_state, reward, None)
+                    self.optimize(i)
+                
+                previous_action = action
+                previous_state = state
                 state = next_state
                 reward_in_episode += reward
 

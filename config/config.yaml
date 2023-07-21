@@ -10,10 +10,10 @@ learning_rate: 1e-4
 horizon: 100
 tau: 0.005
 print_ratio: 100
-save_model: True
+save_model: False
 use_fta: True
 soft_target_update: True
-# use_aux: "no_aux", "ir", "reward"
-use_aux: "no_aux"
+# use_aux: "no_aux", "ir", "reward", "sf"
+use_aux: "reward"
 # goal_mode: {0: default goal, 1: similar task, 2: more dificult task}
 goal_mode: 0

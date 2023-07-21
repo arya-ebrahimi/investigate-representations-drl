@@ -4,18 +4,19 @@ import torch.nn.functional as F
 from core.activations.fta import FTA
 
 class Reward(nn.Module):
-    def __init__(self, use_fta):
+    def __init__(self, use_fta, action_dim=1):
         super().__init__()
         self.use_fta = use_fta
         if self.use_fta:
-            self.linear1 = nn.Linear(640, 1024)
+            self.linear1 = nn.Linear(640+action_dim, 1024)
         else:
-            self.linear1 = nn.Linear(32, 1024)
+            self.linear1 = nn.Linear(32+action_dim, 1024)
         
         self.linear2 = nn.Linear(1024, 128)
         self.linear3 = nn.Linear(128, 1)
         
-    def forward(self, x):
+    def forward(self, x, actions):
+        x = torch.cat((x, actions), -1)
         x = F.relu(self.linear1(x))
         x = F.relu(self.linear2(x))
         x = self.linear3(x)
@@ -66,7 +67,7 @@ class Network(nn.Module):
         self.q_network_fc2 = nn.Linear(64, 64)
         self.q_network_fc3 = nn.Linear(64, 4)
         
-    def forward(self, x):
+    def forward(self, x, actions=None):
         x = x/255.0
         x = F.relu(self.conv1(x))
 
@@ -83,8 +84,11 @@ class Network(nn.Module):
         # auxilary network
         aux = None
         if self.use_aux != "no_aux":
-            aux = self.aux_network(x)
-        
+            if self.use_aux == "reward":
+                if actions != None:
+                    aux = self.aux_network(x, actions)
+            else:
+                aux = self.aux_network(x)
         # value network
         x = F.relu(self.q_network_fc1(x))
         x = F.relu(self.q_network_fc2(x))
