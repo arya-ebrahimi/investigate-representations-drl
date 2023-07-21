@@ -3,6 +3,23 @@ import torch.nn as nn
 import torch.nn.functional as F
 from core.activations.fta import FTA
 
+class Reward(nn.Module):
+    def __init__(self, use_fta):
+        super().__init__()
+        self.use_fta = use_fta
+        if self.use_fta:
+            self.linear1 = nn.Linear(640, 1024)
+        else:
+            self.linear1 = nn.Linear(32, 1024)
+        
+        self.linear2 = nn.Linear(1024, 128)
+        self.linear3 = nn.Linear(128, 1)
+        
+    def forward(self, x):
+        x = F.relu(self.linear1(x))
+        x = 
+        
+        
 class InputReconstruction(nn.Module):
     def __init__(self, use_fta):
         super(InputReconstruction, self).__init__()
