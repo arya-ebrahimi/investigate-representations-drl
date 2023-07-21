@@ -17,8 +17,10 @@ class Reward(nn.Module):
         
     def forward(self, x):
         x = F.relu(self.linear1(x))
-        x = 
+        x = F.relu(self.linear2(x))
+        x = self.linear3(x)
         
+        return x
         
 class InputReconstruction(nn.Module):
     def __init__(self, use_fta):
@@ -33,14 +35,10 @@ class InputReconstruction(nn.Module):
         
     def forward(self, x):
         x = F.relu(self.linear(x))
-        
-        # print(x.shape)
         x = self.unflat(x)
-        # print(x.shape)
         x = F.relu(self.convT1(x))
-        # print(x.shape)
         x = F.relu(self.convT2(x))
-        # print(x.shape)
+        
         return x
 
 class Network(nn.Module):
@@ -62,6 +60,8 @@ class Network(nn.Module):
         if self.use_aux != "no_aux":
             if self.use_aux == 'ir':
                 self.aux_network = InputReconstruction(use_fta=self.use_fta)
+            elif self.use_aux == 'reward':
+                self.aux_network = Reward(use_fta=self.use_fta)
         
         self.q_network_fc2 = nn.Linear(64, 64)
         self.q_network_fc3 = nn.Linear(64, 4)
