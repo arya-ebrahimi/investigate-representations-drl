@@ -2,4 +2,5 @@ core/__pycache__
 core/agents/__pycache__
 core/activations/__pycache__
 core/agents/__pycache__
+core/envs/__pycache__
 outputs
