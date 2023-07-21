@@ -132,11 +132,16 @@ class Agent():
         if self.args.use_aux != None:
             if self.args.use_aux == 'ir':
                 aux_return = net_return[1]
-                
                 aux_loss = nn.MSELoss()
                 
                 loss = loss + 0.0001 * aux_loss(aux_return, state_batch)
                 
+            if self.args.use_aux == 'reward':
+                aux_return = net_return[1]
+                aux_loss = nn.MSELoss()
+                                
+                loss = loss + aux_loss(aux_return, reward_batch)
+
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
