@@ -17,13 +17,13 @@ class InputReconstruction(nn.Module):
     def forward(self, x):
         x = F.relu(self.linear(x))
         
-        print(x.shape)
+        # print(x.shape)
         x = self.unflat(x)
-        print(x.shape)
+        # print(x.shape)
         x = F.relu(self.convT1(x))
-        print(x.shape)
+        # print(x.shape)
         x = F.relu(self.convT2(x))
-        print(x.shape)
+        # print(x.shape)
         return x
 
 class Network(nn.Module):
