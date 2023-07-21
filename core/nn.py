@@ -3,6 +3,27 @@ import torch.nn as nn
 import torch.nn.functional as F
 from core.activations.fta import FTA
 
+class SFNetwork(nn.Module):
+    def __init__(self, use_fta, action_dim=1):
+        super().__init__()
+        self.use_fta = use_fta
+        
+        if self.use_fta:
+            self.linear1 = nn.Linear(640+action_dim, 640)
+            self.linear2 = nn.Linear(640, 640)
+        else:
+            self.linear1 = nn.Linear(32+action_dim, 32)
+            self.linear2 = nn.Linear(32, 32)
+        
+    def forward(self, x, actions):
+        x = torch.cat((x, actions), -1)
+        x = F.relu(self.linear1(x))
+        x = self.linear2(x)
+        
+        return x
+        
+        
+
 class Reward(nn.Module):
     def __init__(self, use_fta, action_dim=1):
         super().__init__()
@@ -63,6 +84,8 @@ class Network(nn.Module):
                 self.aux_network = InputReconstruction(use_fta=self.use_fta)
             elif self.use_aux == 'reward':
                 self.aux_network = Reward(use_fta=self.use_fta)
+            elif self.use_aux == 'sf':
+                self.aux_network = SFNetwork(use_fta=self.use_fta)
         
         self.q_network_fc2 = nn.Linear(64, 64)
         self.q_network_fc3 = nn.Linear(64, 4)
@@ -76,22 +99,24 @@ class Network(nn.Module):
         x = x.reshape((-1, 1024))
         
         if self.use_fta:
-            x = self.fta(self.fc1(x))
+            rep = self.fta(self.fc1(x))
         else:
-            x = F.relu(self.fc1(x))
+            rep = F.relu(self.fc1(x))
         # representation built
-        
         # auxilary network
         aux = None
         if self.use_aux != "no_aux":
             if self.use_aux == "reward":
                 if actions != None:
-                    aux = self.aux_network(x, actions)
+                    aux = self.aux_network(rep, actions)
+            elif self.use_aux == "sf":
+                if actions != None:
+                    aux = self.aux_network(rep, actions)
             else:
-                aux = self.aux_network(x)
+                aux = self.aux_network(rep)
         # value network
-        x = F.relu(self.q_network_fc1(x))
+        x = F.relu(self.q_network_fc1(rep))
         x = F.relu(self.q_network_fc2(x))
         x = self.q_network_fc3(x)
 
-        return [x, aux]
+        return [x, aux, rep]
