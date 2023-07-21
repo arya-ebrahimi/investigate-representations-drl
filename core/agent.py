@@ -107,12 +107,6 @@ class Agent():
         
         net_return = self.policy_net(state_batch)
         state_action_values = net_return[0].gather(1, action_batch)
-
-        # if i % self.args.print_ratio == 0:
-        #     print(self.policy_net(state_batch))
-        #     print(action_batch.unsqueeze(1))
-        #     print(state_action_values)
-        
         
         # Compute V(s_{t+1}) for all next states.
         # Expected values of actions for non_final_next_states are computed based
@@ -139,8 +133,8 @@ class Agent():
             if self.args.use_aux == 'reward':
                 aux_return = net_return[1]
                 aux_loss = nn.MSELoss()
-                                
-                loss = loss + aux_loss(aux_return, reward_batch)
+                rb = torch.reshape(reward_batch, (self.args.batch_size, -1))
+                loss = loss + aux_loss(aux_return, rb)
 
         # Optimize the model
         self.optimizer.zero_grad()
