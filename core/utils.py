@@ -59,3 +59,15 @@ def create_distance_matrices(env, model):
             d_s[j, i] = d_s[i, j]    
     
     return d_v, d_s
+
+def create_representations(env, model):
+    random_transitions = generate_random_trajectories(env=env)
+
+    reps = []
+    for i in range(1000):
+        temp = model.target_net(torch.tensor(random_transitions[i].state, dtype=torch.float32, device=model.device).unsqueeze(0))
+        rep = temp[2].cpu().detach().numpy()
+        
+        reps.append(rep)
+    
+    return np.array(reps)
