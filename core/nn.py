@@ -86,6 +86,7 @@ class Network(nn.Module):
                 self.aux_network = Reward(use_fta=self.use_fta)
             elif self.use_aux == 'sf':
                 self.aux_network = SFNetwork(use_fta=self.use_fta)
+                self.reward_network = Reward(use_fta=self.use_fta)
         
         self.q_network_fc2 = nn.Linear(64, 64)
         self.q_network_fc3 = nn.Linear(64, 4)
@@ -105,6 +106,8 @@ class Network(nn.Module):
         # representation built
         # auxilary network
         aux = None
+        reward = None
+        
         if self.use_aux != "no_aux":
             if self.use_aux == "reward":
                 if actions != None:
@@ -112,6 +115,8 @@ class Network(nn.Module):
             elif self.use_aux == "sf":
                 if actions != None:
                     aux = self.aux_network(rep, actions)
+                    reward = self.reward_network(rep, actions)
+
             else:
                 aux = self.aux_network(rep)
         # value network
@@ -119,4 +124,4 @@ class Network(nn.Module):
         x = F.relu(self.q_network_fc2(x))
         x = self.q_network_fc3(x)
 
-        return [x, aux, rep]
+        return [x, aux, rep, reward]
