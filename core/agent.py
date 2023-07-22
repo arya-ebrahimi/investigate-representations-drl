@@ -99,8 +99,9 @@ class Agent():
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
         
-        next_action_batch = torch.cat(batch.next_action)
-        next_state_batch = torch.cat(batch.next_state)
+        if self.args.use_aux == 'sf':
+            next_action_batch = torch.cat(batch.next_action)
+            next_state_batch = torch.cat(batch.next_state)
         # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
         # columns of actions taken. These are the actions which would've been taken
         # for each batch state according to policy_net

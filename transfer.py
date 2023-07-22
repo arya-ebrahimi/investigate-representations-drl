@@ -4,11 +4,10 @@ from PIL import Image
 from core.agent import *
 import hydra
 
-@hydra.main(config_path="config", config_name="config.yaml", version_base=None)
+@hydra.main(config_path="config", config_name="transfer_config.yaml", version_base=None)
 def main(args):
-    args.use_aux = 'reward'
     model_path = '.models/fixed_reward_aux_model.pt'
-    env = gym.make('core:MazEnv-v0', goal_mode=1)
+    env = gym.make('core:MazEnv-v0', goal_mode=args.goal_mode)
     model = Agent(env=env, args=args)
 
     model.target_net.load_state_dict(torch.load(model_path))
