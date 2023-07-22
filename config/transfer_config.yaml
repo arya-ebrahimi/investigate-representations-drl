@@ -17,3 +17,4 @@ soft_target_update: True
 use_aux: "reward"
 # goal_mode: {0: default goal, 1: similar task, 2: more dificult task}
 goal_mode: 1
+model_path: ".models/fixed_reward_aux_model.pt"
