@@ -26,6 +26,13 @@ class Agent():
         self.id = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
         self.model_dir = Path('.models')
         
+        
+        if self.args.use_aux == 'sf' or self.args.use_aux == 'laplacian':
+            self.need_next = True
+        else:
+            self.need_next = False
+        
+        
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
             
@@ -99,7 +106,7 @@ class Agent():
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
         
-        if self.args.use_aux == 'sf':
+        if self.need_next:
             next_action_batch = torch.cat(batch.next_action)
             next_state_batch = torch.cat(batch.next_state)
         # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
@@ -155,7 +162,20 @@ class Agent():
 
                 loss = loss + aux_loss(aux_return, (1-self.args.gamma) * rep_next_aux + self.args.gamma * aux_next) \
                     + reward_loss(reward_return, rb)
+                    
+            if self.args.use_aux == 'laplacian':
+                state_rep = net_return[2]
+                with torch.no_grad(): 
+                    next_state_aux_return = self.policy_net(next_state_batch)
+                    next_rep = next_state_aux_return[2]
+                    
+                # sum = 0
+                # for i in range(self.args.batch_size):
+                #     for j in range(i):
+                #         sum += torch.dot(state_rep[i], state_rep[i])**2 - (torch.linalg.norm(state_rep[i])**2 - torch.linalg.norm(state_rep[j])**2)
+                aux_loss = nn.MSELoss(state_rep, next_rep)
 
+                loss = loss + aux_loss 
         
         # Optimize the model
         self.optimizer.zero_grad()
@@ -182,7 +202,7 @@ class Agent():
             for t in count():
                                 
                 action = self.select_action(state)
-                if self.args.use_aux == 'sf':
+                if self.need_next:
                     if t > 0:
                         self.memory.push(previous_state, previous_action, state, reward, action)
                         self.optimize(i)
@@ -199,7 +219,7 @@ class Agent():
                     next_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
 
                 # Store the transition in memory
-                if self.args.use_aux != 'sf':
+                if not self.need_next:
                     self.memory.push(state, action, next_state, reward, None)
                     self.optimize(i)
                 

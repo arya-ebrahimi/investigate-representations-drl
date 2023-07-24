@@ -116,9 +116,11 @@ class Network(nn.Module):
                 if actions != None:
                     aux = self.aux_network(rep, actions)
                     reward = self.reward_network(rep, actions)
-
-            else:
+            elif self.use_aux == "ir":
                 aux = self.aux_network(rep)
+            
+            else:
+                aux=None    
         # value network
         x = F.relu(self.q_network_fc1(rep))
         x = F.relu(self.q_network_fc2(x))

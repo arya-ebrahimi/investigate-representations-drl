@@ -22,12 +22,5 @@ def main(args):
     np.save('d_s', d_s)
     
 
-    # The first 8 params are weights and biases of representation network
-    # for i, param in enumerate(model.policy_net.parameters()):
-    #     if i < 8:
-    #         param.requires_grad = False
-    
-    # model.train()
-
 if __name__ == "__main__":
     main()
