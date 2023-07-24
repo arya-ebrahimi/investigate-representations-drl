@@ -173,9 +173,9 @@ class Agent():
                 # for i in range(self.args.batch_size):
                 #     for j in range(i):
                 #         sum += torch.dot(state_rep[i], state_rep[i])**2 - (torch.linalg.norm(state_rep[i])**2 - torch.linalg.norm(state_rep[j])**2)
-                aux_loss = nn.MSELoss(state_rep, next_rep)
+                aux_loss = nn.MSELoss()
 
-                loss = loss + aux_loss 
+                loss = loss + aux_loss (state_rep, next_rep)
         
         # Optimize the model
         self.optimizer.zero_grad()
