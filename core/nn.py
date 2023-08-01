@@ -115,7 +115,7 @@ class Network(nn.Module):
             elif self.use_aux == "sf":
                 if actions != None:
                     aux = self.aux_network(rep, actions)
-                    reward = self.reward_network(rep, actions)
+                    # reward = self.reward_network(rep, actions)
             elif self.use_aux == "ir":
                 aux = self.aux_network(rep)
             

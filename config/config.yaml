@@ -14,6 +14,6 @@ save_model: False
 use_fta: True
 soft_target_update: True
 # use_aux: "no_aux", "ir", "reward", "sf"
-use_aux: "laplacian"
+use_aux: "sf"
 # goal_mode: {0: default goal, 1: similar task, 2: more dificult task}
 goal_mode: 0
