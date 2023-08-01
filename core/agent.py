@@ -149,13 +149,22 @@ class Agent():
             if self.args.use_aux == 'sf':
                 aux_return = net_return[1]
                 representation_st = net_return[2]
+                reward_st = net_return[3]
                
                 with torch.no_grad(): 
                     next_state_aux_return = self.target_net(next_state_batch, next_action_batch)
                     aux_next = next_state_aux_return[1]
                 
                 aux_loss = nn.MSELoss()
-                loss = loss + aux_loss(aux_return, representation_st + self.args.gamma * aux_next)         
+                reward_loss = nn.MSELoss()
+                loss_to_add = 0.00001 * aux_loss(aux_return, representation_st + self.args.gamma * aux_next) 
+                rb = torch.reshape(reward_batch, (self.args.batch_size, -1))
+
+                # print('loss: ', loss)
+                # print('loss_to_add:, ', loss_to_add)
+                
+                loss = loss + loss_to_add + reward_loss(reward_st, rb)
+                    
                            
             if self.args.use_aux == 'laplacian':
                 state_rep = net_return[2]
