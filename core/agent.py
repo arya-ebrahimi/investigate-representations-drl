@@ -11,6 +11,7 @@ import math
 import datetime
 from core.utils import *
 from core.nn import Network
+import pickle
 
 is_ipython = 'inline' in matplotlib.get_backend()
 if is_ipython:
@@ -25,7 +26,7 @@ class Agent():
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.id = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
         self.model_dir = Path('.models')
-        
+        self.rewards=[]
         
         if self.args.use_aux == 'sf' or self.args.use_aux == 'laplacian':
             self.need_next = True
@@ -157,13 +158,13 @@ class Agent():
                 
                 aux_loss = nn.MSELoss()
                 reward_loss = nn.MSELoss()
-                loss_to_add = 0.00001 * aux_loss(aux_return, representation_st + self.args.gamma * aux_next) 
+                # loss_to_add = 0.00001 * aux_loss(aux_return, representation_st + self.args.gamma * aux_next) 
                 rb = torch.reshape(reward_batch, (self.args.batch_size, -1))
 
-                # print('loss: ', loss)
+                print('loss: ', loss)
                 # print('loss_to_add:, ', loss_to_add)
                 
-                loss = loss + loss_to_add + reward_loss(reward_st, rb)
+                loss = loss + reward_loss(reward_st, rb)
                     
                            
             if self.args.use_aux == 'laplacian':
@@ -247,10 +248,14 @@ class Agent():
                 if i % self.args.target_update == 0:
                     self.target_net.load_state_dict(self.policy_net.state_dict())
             
-            if i % self.args.save_ratio:
+            if i % self.args.save_ratio == 0:
+                with open(f'{self.model_dir}/rewards/rewards_{self.id}.pkl', 'wb') as fp:
+                        pickle.dump(self.reward_in_episode, fp)
+                    
+                
                 if self.args.save_model:
                     torch.save(self.target_net.state_dict(), f'{self.model_dir}/pytorch_{self.id}.pt')
-                
+                    
         self.plot_rewards(show_result=True)
         plt.ioff()
         plt.show()
