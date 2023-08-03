@@ -28,7 +28,7 @@ class Agent():
         self.model_dir = Path('.models')
         self.rewards=[]
         
-        if self.args.use_aux == 'sf' or self.args.use_aux == 'laplacian':
+        if self.args.use_aux == 'sf' or self.args.use_aux == 'sf+reward' or self.args.use_aux == 'laplacian':
             self.need_next = True
         else:
             self.need_next = False
@@ -139,7 +139,7 @@ class Agent():
                 aux_return = net_return[1]
                 aux_loss = nn.MSELoss()
                 
-                loss = loss + 0.0001 * aux_loss(aux_return, state_batch)
+                loss = loss + self.args.aux_loss_weight * aux_loss(aux_return, state_batch)
                 
             if self.args.use_aux == 'reward':
                 aux_return = net_return[1]
@@ -150,6 +150,20 @@ class Agent():
             if self.args.use_aux == 'sf':
                 aux_return = net_return[1]
                 representation_st = net_return[2]
+            
+                with torch.no_grad(): 
+                    next_state_aux_return = self.target_net(next_state_batch, next_action_batch)
+                    aux_next = next_state_aux_return[1]
+                
+                aux_loss = nn.MSELoss()
+                loss_to_add = self.args.aux_loss_weight * aux_loss(aux_return, representation_st + self.args.gamma * aux_next) 
+
+                loss = loss + loss_to_add
+                    
+                
+            if self.args.use_aux == 'sf+reward':
+                aux_return = net_return[1]
+                representation_st = net_return[2]
                 reward_st = net_return[3]
                
                 with torch.no_grad(): 
@@ -158,12 +172,9 @@ class Agent():
                 
                 aux_loss = nn.MSELoss()
                 reward_loss = nn.MSELoss()
-                loss_to_add = 0.00001 * aux_loss(aux_return, representation_st + self.args.gamma * aux_next) 
+                loss_to_add = self.args.aux_loss_weight * aux_loss(aux_return, representation_st + self.args.gamma * aux_next) 
                 rb = torch.reshape(reward_batch, (self.args.batch_size, -1))
 
-                # print('loss: ', loss)
-                # print('loss_to_add:, ', loss_to_add)
-                
                 loss = loss + loss_to_add + reward_loss(reward_st, rb)
                     
                            
@@ -196,9 +207,19 @@ class Agent():
                         torch.tensor([reward], device=self.device),
                         torch.tensor([done], device=self.device, dtype=torch.bool))
         
-  
+    
+    def _save(self):
+        if self.args.save_rewards:
+            with open(f'{self.model_dir}/rewards/rewards_{self.id}.pkl', 'wb') as fp:
+                pickle.dump(self.reward_in_episode, fp)
+                        
+                
+        if self.args.save_model:
+            torch.save(self.target_net.state_dict(), f'{self.model_dir}/pytorch_{self.id}.pt')
+    
     def train(self):
-        for i in trange(self.args.num_episodes):
+        consecutive_episodes = 0
+        for i in trange(self.args.max_episodes):
             reward_in_episode = 0
             state, info = self.env.reset()
             state = state.transpose((2, 0, 1))
@@ -242,23 +263,23 @@ class Agent():
                         self.optimize(i)
                     
                     self.reward_in_episode.append(reward_in_episode)
+                    if(reward_in_episode == 1):
+                        consecutive_episodes += 1
+                    else:
+                        consecutive_episodes = 0
                     self.plot_rewards()
                     break
-                
             
+            if consecutive_episodes == self.args.consecutive_episodes:
+                self._save()
+                break
             
             if not self.args.soft_target_update:
                 if i % self.args.target_update == 0:
                     self.target_net.load_state_dict(self.policy_net.state_dict())
             
             if i % self.args.save_ratio == 0:
-                if self.args.save_rewards:
-                    with open(f'{self.model_dir}/rewards/rewards_{self.id}.pkl', 'wb') as fp:
-                            pickle.dump(self.reward_in_episode, fp)
-                        
-                
-                if self.args.save_model:
-                    torch.save(self.target_net.state_dict(), f'{self.model_dir}/pytorch_{self.id}.pt')
+                self._save()
                     
         self.plot_rewards(show_result=True)
         plt.ioff()

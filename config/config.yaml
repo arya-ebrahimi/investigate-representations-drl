@@ -1,4 +1,4 @@
-num_episodes: 15000
+max_episodes: 15000
 save_ratio: 500
 batch_size: 128
 gamma: 0.99
@@ -10,11 +10,17 @@ learning_rate: 1e-4
 horizon: 100
 tau: 0.005
 print_ratio: 100
-save_model: False
+save_model: True
 use_fta: True
 soft_target_update: True
-# use_aux: "no_aux", "ir", "reward", "sf"
-save_rewards: False
-use_aux: "sf"
+save_rewards: True
+# use_aux: "no_aux", "ir", "reward", "sf", "sf+reward"
+use_aux: "sf+reward"
+# aux_loss_weight:
+#   ir, sf : 1e-4
+#   reward: 1
+aux_loss_weight: 1e-4
 # goal_mode: {0: default goal, 1: similar task, 2: more dificult task}
 goal_mode: 0
+# finish the training after number of consecutive episodes with reward of 1
+consecutive_episodes: 100
