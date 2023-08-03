@@ -178,16 +178,12 @@ class Agent():
                 loss = loss + loss_to_add + reward_loss(reward_st, rb)
                     
                            
-            if self.args.use_aux == 'laplacian':
+            if self.args.use_aux == 'da':
                 state_rep = net_return[2]
                 with torch.no_grad(): 
                     next_state_aux_return = self.policy_net(next_state_batch)
                     next_rep = next_state_aux_return[2]
                     
-                # sum = 0
-                # for i in range(self.args.batch_size):
-                #     for j in range(i):
-                #         sum += torch.dot(state_rep[i], state_rep[i])**2 - (torch.linalg.norm(state_rep[i])**2 - torch.linalg.norm(state_rep[j])**2)
                 aux_loss = nn.MSELoss()
 
                 loss = loss + aux_loss (state_rep, next_rep)
