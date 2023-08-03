@@ -158,13 +158,13 @@ class Agent():
                 
                 aux_loss = nn.MSELoss()
                 reward_loss = nn.MSELoss()
-                # loss_to_add = 0.00001 * aux_loss(aux_return, representation_st + self.args.gamma * aux_next) 
+                loss_to_add = 0.00001 * aux_loss(aux_return, representation_st + self.args.gamma * aux_next) 
                 rb = torch.reshape(reward_batch, (self.args.batch_size, -1))
 
-                print('loss: ', loss)
+                # print('loss: ', loss)
                 # print('loss_to_add:, ', loss_to_add)
                 
-                loss = loss + reward_loss(reward_st, rb)
+                loss = loss + loss_to_add + reward_loss(reward_st, rb)
                     
                            
             if self.args.use_aux == 'laplacian':
@@ -217,10 +217,7 @@ class Agent():
 
                 reward = torch.tensor([reward], device=self.device)
                 done = terminated or truncated
-                if terminated:
-                    next_state = None
-                else:
-                    next_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
+                next_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
 
                 # Store the transition in memory
                 if not self.need_next:
@@ -231,7 +228,7 @@ class Agent():
                 previous_state = state
                 state = next_state
                 reward_in_episode += reward
-
+                
                 if self.args.soft_target_update:
                     target_net_state_dict = self.target_net.state_dict()
                     policy_net_state_dict = self.policy_net.state_dict()
@@ -240,18 +237,25 @@ class Agent():
                     self.target_net.load_state_dict(target_net_state_dict)
                 
                 if done or t > self.args.horizon:
+                    if self.need_next:
+                        self.memory.push(previous_state, previous_action, state, reward, action)
+                        self.optimize(i)
+                    
                     self.reward_in_episode.append(reward_in_episode)
                     self.plot_rewards()
                     break
+                
+            
             
             if not self.args.soft_target_update:
                 if i % self.args.target_update == 0:
                     self.target_net.load_state_dict(self.policy_net.state_dict())
             
             if i % self.args.save_ratio == 0:
-                with open(f'{self.model_dir}/rewards/rewards_{self.id}.pkl', 'wb') as fp:
-                        pickle.dump(self.reward_in_episode, fp)
-                    
+                if self.args.save_rewards:
+                    with open(f'{self.model_dir}/rewards/rewards_{self.id}.pkl', 'wb') as fp:
+                            pickle.dump(self.reward_in_episode, fp)
+                        
                 
                 if self.args.save_model:
                     torch.save(self.target_net.state_dict(), f'{self.model_dir}/pytorch_{self.id}.pt')
