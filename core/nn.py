@@ -86,6 +86,8 @@ class Network(nn.Module):
                 self.aux_network = Reward(use_fta=self.use_fta)
             elif self.use_aux == 'sf':
                 self.aux_network = SFNetwork(use_fta=self.use_fta)
+            elif self.use_aux == 'sf+reward':
+                self.aux_network = SFNetwork(use_fta=self.use_fta)
                 self.reward_network = Reward(use_fta=self.use_fta)
         
         self.q_network_fc2 = nn.Linear(64, 64)
@@ -113,6 +115,9 @@ class Network(nn.Module):
                 if actions != None:
                     aux = self.aux_network(rep, actions)
             elif self.use_aux == "sf":
+                if actions != None:
+                    aux = self.aux_network(rep, actions)
+            elif self.use_aux == "sf+reward":
                 if actions != None:
                     aux = self.aux_network(rep, actions)
                     reward = self.reward_network(rep, actions)
