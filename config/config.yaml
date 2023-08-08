@@ -10,12 +10,12 @@ learning_rate: 1e-4
 horizon: 100
 tau: 0.005
 print_ratio: 100
-save_model: True
+save_model: False
 use_fta: True
 soft_target_update: True
-save_rewards: True
-# use_aux: "no_aux", "ir", "reward", "sf", "sf+reward", "da"
-use_aux: "laplacian"
+save_rewards: False
+# use_aux: "no_aux", "ir", "reward", "sf", "sf+reward", "da", "virtual-reward-1", "virtual-reward-5"
+use_aux: "reward"
 # aux_loss_weight:
 #   ir, sf : 1e-4
 #   reward: 1

@@ -12,7 +12,13 @@ import hydra
 
 @hydra.main(config_path="config", config_name="config.yaml", version_base=None)
 def main(args):
-    env = gym.make('core:MazEnv-v0', goal_mode=args.goal_mode)
+    if args.use_aux == 'virtual-reward-1':
+        env = gym.make('core:MazEnv-v0', goal_mode=args.goal_mode, virtual_goal=1)
+    elif args.use_aux == 'virtual-reward-5':
+        env = gym.make('core:MazEnv-v0', goal_mode=args.goal_mode, virtual_goal=2)
+    else:
+        env = gym.make('core:MazEnv-v0', goal_mode=args.goal_mode)
+    
     env.reset()
     agent = Agent(env=env, args=args)
     agent.train()
