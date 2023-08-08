@@ -14,7 +14,8 @@ class MazEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
     
 
-    def __init__(self, render_mode=None, size=SIZE, goal_mode=0):
+    def __init__(self, render_mode=None, size=SIZE, goal_mode=0, virtual_goal=0):
+        self.virtual_goal = virtual_goal
         
         if goal_mode == 0:
             goal_pose = [9, 10]
@@ -22,7 +23,12 @@ class MazEnv(gym.Env):
             goal_pose = [9, 11]
         elif goal_mode == 2:
             goal_pose = [1, 4]
-        
+            
+        if self.virtual_goal==1:
+            self.virtual_goals = [[7, 7]]
+        if self.virtual_goal==2:
+            self.virtual_goals = [[0, 0], [0, 14], [14, 0], [14, 14], [7, 7]]
+            
         self.size = size  # The size of the square grid
         self.shape = (size, size)
         self.observation_space = spaces.Box(low=0, high=255, shape=(self.size, self.size, 3), dtype=np.uint8)
@@ -105,6 +111,12 @@ class MazEnv(gym.Env):
         
         return [1.0, new_state, 0.0, False]
     
+    def calculate_virtual_reward(self):
+        for i in self.virtual_goals:
+            if self.current_state_index[0] == i[0] and self.current_state_index[1] == i[1]:
+                return 1
+        
+        return 0
 
     def step(self, a): 
         
@@ -114,8 +126,10 @@ class MazEnv(gym.Env):
         self.current_state_index = np.unravel_index(self.s, self.shape)
         self.image[self.current_state_index[0], self.current_state_index[1], 1] = 0
         self.last_action = a
-        
-        return(self.image, reward, terminate, False, {})
+        virtual_reward=None
+        if self.virtual_goal != 0:
+            virtual_reward = self.calculate_virtual_reward()
+        return(self.image, reward, terminate, False, {'virtual-reward': virtual_reward})
         
     def reset(self, *, seed: Optional[int] = None, options: Optional[dict] = None):
         super().reset(seed=seed)
@@ -131,4 +145,10 @@ class MazEnv(gym.Env):
             
         return self.image, {"prob": 1}
     
+    def return_virtual_goals(self):
+        image, _ = self.reset()
 
+        for i in self.virtual_goals:
+            image[i[0], i[1], 2] = 128
+            
+        return image
