@@ -5,7 +5,7 @@ import torch
 import gymnasium as gym
 
 Transition = namedtuple('Transition',
-                        ('state', 'action', 'next_state', 'reward', 'next_action'))
+                        ('state', 'action', 'next_state', 'reward', 'next_action', 'virtual_reward'))
 
 class ReplayMemory(object):
     

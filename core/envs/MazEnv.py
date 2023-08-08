@@ -114,9 +114,9 @@ class MazEnv(gym.Env):
     def calculate_virtual_reward(self):
         for i in self.virtual_goals:
             if self.current_state_index[0] == i[0] and self.current_state_index[1] == i[1]:
-                return 1
+                return 1.0
         
-        return 0
+        return 0.0
 
     def step(self, a): 
         

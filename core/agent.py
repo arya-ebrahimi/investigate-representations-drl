@@ -28,7 +28,7 @@ class Agent():
         self.model_dir = Path('.models')
         self.rewards=[]
         
-        if self.args.use_aux == 'sf' or self.args.use_aux == 'sf+reward' or self.args.use_aux == 'laplacian':
+        if self.args.use_aux == 'sf' or self.args.use_aux == 'sf+reward' or self.args.use_aux=='virtual-reward-1' or self.args.use_aux=='virtual-reward-5':
             self.need_next = True
         else:
             self.need_next = False
@@ -97,8 +97,9 @@ class Agent():
         transitions = self.memory.sample(self.args.batch_size)
         batch = Transition(*zip(*transitions))
 
-    # Compute a mask of non-final states and concatenate the batch elements
-    # (a final state would've been the one after which simulation ended)
+        # Compute a mask of non-final states and concatenate the batch elements
+        # (a final state would've been the one after which simulation ended)
+        
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                             batch.next_state)), device=self.device, dtype=torch.bool)
         non_final_next_states = torch.cat([s for s in batch.next_state
@@ -107,29 +108,23 @@ class Agent():
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
         
+        
         if self.need_next:
             next_action_batch = torch.cat(batch.next_action)
             next_state_batch = torch.cat(batch.next_state)
-        # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
-        # columns of actions taken. These are the actions which would've been taken
-        # for each batch state according to policy_net
-        # print(state_batch.shape)
-        # print(action_batch.shape)
-        
+            
+
+        # [x, aux, rep, reward]
         net_return = self.policy_net(state_batch, action_batch)
         state_action_values = net_return[0].gather(1, action_batch)
-        
-        # Compute V(s_{t+1}) for all next states.
-        # Expected values of actions for non_final_next_states are computed based
-        # on the "older" target_net; selecting their best reward with max(1)[0].
-        # This is merged based on the mask, such that we'll have either the expected
-        # state value or 0 in case the state was final.
+        # print(state_action_values.shape)
+
         next_state_values = torch.zeros(self.args.batch_size, device=self.device)
         with torch.no_grad():
             next_state_values[non_final_mask] = self.target_net(non_final_next_states)[0].max(1)[0]
         # Compute the expected Q values
         expected_state_action_values = (next_state_values * self.args.gamma) + reward_batch
-
+ 
         # Compute Huber loss
         criterion = nn.MSELoss()
         loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
@@ -187,7 +182,20 @@ class Agent():
                 aux_loss = nn.MSELoss()
 
                 loss = loss + aux_loss (state_rep, next_rep)
-        
+                
+            if self.args.use_aux == 'virtual-reward-1' or self.args.use_aux == 'virtual-reward-5':
+                virtual_reward_batch = torch.cat(batch.virtual_reward)
+                action_values = net_return[1].gather(1, action_batch)
+                with torch.no_grad():
+                    next_state_virtual_action_values = self.target_net(next_state_batch)[1].gather(1, next_action_batch)
+                    # print(next_state_virtual_action_values.shape)
+                    # print(next_state_virtual_action_values.squeeze().shape)
+                    bootstraped_value = (virtual_reward_batch + self.args.gamma * next_state_virtual_action_values.squeeze())
+                    # print(bootstraped_value.shape)
+
+                aux_loss = nn.MSELoss()       
+                
+                loss = loss + aux_loss(action_values, bootstraped_value.unsqueeze(1))
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
@@ -225,11 +233,18 @@ class Agent():
                 action = self.select_action(state)
                 if self.need_next:
                     if t > 0:
-                        self.memory.push(previous_state, previous_action, state, reward, action)
-                        self.optimize(i)
+                        if self.args.use_aux == 'virtual-reward-1' or self.args.use_aux == 'virtual-reward-5':
+                            virtual_reward = torch.tensor([info['virtual-reward']], device=self.device)
+                            # print('virtual_reward', virtual_reward)
+                            # print('reward', reward)
+                            self.memory.push(previous_state, previous_action, state, reward, action, virtual_reward)
+                            self.optimize(i)
+                        else:
+                            self.memory.push(previous_state, previous_action, state, reward, action, None)
+                            self.optimize(i)
 
-    
-                observation, reward, terminated, truncated, _ = self.env.step(action.item())
+
+                observation, reward, terminated, truncated, info = self.env.step(action.item())
                 observation = observation.transpose((2, 0, 1))
 
                 reward = torch.tensor([reward], device=self.device)
@@ -238,7 +253,12 @@ class Agent():
 
                 # Store the transition in memory
                 if not self.need_next:
-                    self.memory.push(state, action, next_state, reward, None)
+                    # if self.args.use_aux == 'virtual-reward-1' or self.args.use_aux == 'virtual-reward-5':
+                    #     virtual_reward = torch.tensor([info['virtual-reward']], device=self.device)
+                    #     self.memory.push(state, action, next_state, reward, None, virtual_reward)
+                    #     self.optimize(i)
+                    # else:
+                    self.memory.push(state, action, next_state, reward, None, None)
                     self.optimize(i)
                 
                 previous_action = action
@@ -255,8 +275,13 @@ class Agent():
                 
                 if done or t > self.args.horizon:
                     if self.need_next:
-                        self.memory.push(previous_state, previous_action, state, reward, action)
-                        self.optimize(i)
+                        if self.args.use_aux == 'virtual-reward-1' or self.args.use_aux == 'virtual-reward-5':
+                            virtual_reward = torch.tensor([info['virtual-reward']], device=self.device)
+                            self.memory.push(previous_state, previous_action, state, reward, action, virtual_reward)
+                            self.optimize(i)
+                        else:
+                            self.memory.push(previous_state, previous_action, state, reward, action, None)
+                            self.optimize(i)
                     
                     self.reward_in_episode.append(reward_in_episode)
                     if(reward_in_episode == 1):

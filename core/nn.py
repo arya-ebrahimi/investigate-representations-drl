@@ -62,7 +62,28 @@ class InputReconstruction(nn.Module):
         x = F.relu(self.convT2(x))
         
         return x
+    
+class VirtualValueFunction(nn.Module):
+    def __init__(self, use_fta):
+        super(VirtualValueFunction, self).__init__()
+        self.use_fta = use_fta
 
+        if self.use_fta:
+            self.q_network_fc1 = nn.Linear(640, 64)
+        else:
+            self.q_network_fc1 = nn.Linear(32, 64)
+            
+        self.q_network_fc2 = nn.Linear(64, 64)
+        self.q_network_fc3 = nn.Linear(64, 4)
+        
+    def forward(self, x):
+        
+        x = F.relu(self.q_network_fc1(x))
+        x = F.relu(self.q_network_fc2(x))
+        x = self.q_network_fc3(x)
+        
+        return x
+        
 class Network(nn.Module):
     
     def __init__(self, use_fta, use_aux=None):
@@ -89,6 +110,8 @@ class Network(nn.Module):
             elif self.use_aux == 'sf+reward':
                 self.aux_network = SFNetwork(use_fta=self.use_fta)
                 self.reward_network = Reward(use_fta=self.use_fta)
+            elif self.use_aux == 'virtual-reward-1' or self.use_aux == 'virtual-reward-5':
+                self.aux_network = VirtualValueFunction(use_fta=self.use_fta)
         
         self.q_network_fc2 = nn.Linear(64, 64)
         self.q_network_fc3 = nn.Linear(64, 4)
@@ -123,7 +146,8 @@ class Network(nn.Module):
                     reward = self.reward_network(rep, actions)
             elif self.use_aux == "ir":
                 aux = self.aux_network(rep)
-            
+            elif self.use_aux == "virtual-reward-1" or self.use_aux == "virtual-reward-5":
+                aux = self.aux_network(rep)
             else:
                 aux=None    
         # value network
