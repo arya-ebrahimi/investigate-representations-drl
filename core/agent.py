@@ -115,7 +115,7 @@ class Agent():
             
 
         # [x, aux, rep, reward]
-        net_return = self.policy_net(state_batch, action_batch)
+        net_return = self.policy_net(state_batch)
         state_action_values = net_return[0].gather(1, action_batch)
         # print(state_action_values.shape)
 
@@ -147,11 +147,10 @@ class Agent():
                 representation_st = net_return[2]
             
                 with torch.no_grad(): 
-                    next_state_aux_return = self.target_net(next_state_batch, next_action_batch)
-                    aux_next = next_state_aux_return[1]
+                    next_state_aux_return = self.target_net(next_state_batch)[1].gather(1, next_action_batch)
                 
                 aux_loss = nn.MSELoss()
-                loss_to_add = self.args.aux_loss_weight * aux_loss(aux_return, representation_st + self.args.gamma * aux_next) 
+                loss_to_add = self.args.aux_loss_weight * aux_loss(aux_return, representation_st + self.args.gamma * next_state_aux_return) 
 
                 loss = loss + loss_to_add
                     
@@ -162,12 +161,11 @@ class Agent():
                 reward_st = net_return[3]
                
                 with torch.no_grad(): 
-                    next_state_aux_return = self.target_net(next_state_batch, next_action_batch)
-                    aux_next = next_state_aux_return[1]
+                    next_state_aux_return = self.target_net(next_state_batch)[1].gather(1, next_action_batch)
                 
                 aux_loss = nn.MSELoss()
                 reward_loss = nn.MSELoss()
-                loss_to_add = self.args.aux_loss_weight * aux_loss(aux_return, representation_st + self.args.gamma * aux_next) 
+                loss_to_add = self.args.aux_loss_weight * aux_loss(aux_return, representation_st + self.args.gamma * next_state_aux_return) 
                 rb = torch.reshape(reward_batch, (self.args.batch_size, -1))
 
                 loss = loss + loss_to_add + reward_loss(reward_st, rb)

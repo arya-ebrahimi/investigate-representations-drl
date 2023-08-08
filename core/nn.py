@@ -4,19 +4,18 @@ import torch.nn.functional as F
 from core.activations.fta import FTA
 
 class SFNetwork(nn.Module):
-    def __init__(self, use_fta, action_dim=1):
+    def __init__(self, use_fta):
         super().__init__()
         self.use_fta = use_fta
         
         if self.use_fta:
-            self.linear1 = nn.Linear(640+action_dim, 640)
+            self.linear1 = nn.Linear(640, 640)
             self.linear2 = nn.Linear(640, 640)
         else:
-            self.linear1 = nn.Linear(32+action_dim, 32)
+            self.linear1 = nn.Linear(32, 32)
             self.linear2 = nn.Linear(32, 32)
         
-    def forward(self, x, actions):
-        x = torch.cat((x, actions), -1)
+    def forward(self, x):
         x = F.relu(self.linear1(x))
         x = self.linear2(x)
         
@@ -25,19 +24,18 @@ class SFNetwork(nn.Module):
         
 
 class Reward(nn.Module):
-    def __init__(self, use_fta, action_dim=1):
+    def __init__(self, use_fta):
         super().__init__()
         self.use_fta = use_fta
         if self.use_fta:
-            self.linear1 = nn.Linear(640+action_dim, 1024)
+            self.linear1 = nn.Linear(640, 1024)
         else:
-            self.linear1 = nn.Linear(32+action_dim, 1024)
+            self.linear1 = nn.Linear(32, 1024)
         
         self.linear2 = nn.Linear(1024, 128)
         self.linear3 = nn.Linear(128, 1)
         
-    def forward(self, x, actions):
-        x = torch.cat((x, actions), -1)
+    def forward(self, x):
         x = F.relu(self.linear1(x))
         x = F.relu(self.linear2(x))
         x = self.linear3(x)
@@ -116,7 +114,7 @@ class Network(nn.Module):
         self.q_network_fc2 = nn.Linear(64, 64)
         self.q_network_fc3 = nn.Linear(64, 4)
         
-    def forward(self, x, actions=None):
+    def forward(self, x):
         x = x/255.0
         x = F.relu(self.conv1(x))
 
@@ -135,15 +133,12 @@ class Network(nn.Module):
         
         if self.use_aux != "no_aux":
             if self.use_aux == "reward":
-                if actions != None:
-                    aux = self.aux_network(rep, actions)
+                aux = self.aux_network(rep)
             elif self.use_aux == "sf":
-                if actions != None:
-                    aux = self.aux_network(rep, actions)
+                aux = self.aux_network(rep)
             elif self.use_aux == "sf+reward":
-                if actions != None:
-                    aux = self.aux_network(rep, actions)
-                    reward = self.reward_network(rep, actions)
+                aux = self.aux_network(rep)
+                reward = self.reward_network(rep)
             elif self.use_aux == "ir":
                 aux = self.aux_network(rep)
             elif self.use_aux == "virtual-reward-1" or self.use_aux == "virtual-reward-5":
