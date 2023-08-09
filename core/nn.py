@@ -105,9 +105,7 @@ class Network(nn.Module):
                 self.aux_network = Reward(use_fta=self.use_fta)
             elif self.use_aux == 'sf':
                 self.aux_network = SFNetwork(use_fta=self.use_fta)
-            elif self.use_aux == 'sf+reward':
-                self.aux_network = SFNetwork(use_fta=self.use_fta)
-                self.reward_network = Reward(use_fta=self.use_fta)
+                self.next_state_rep = InputReconstruction(use_fta=self.use_fta)
             elif self.use_aux == 'virtual-reward-1' or self.use_aux == 'virtual-reward-5':
                 self.aux_network = VirtualValueFunction(use_fta=self.use_fta)
         
@@ -129,16 +127,14 @@ class Network(nn.Module):
         # representation built
         # auxilary network
         aux = None
-        reward = None
+        next_rep = None
         
         if self.use_aux != "no_aux":
             if self.use_aux == "reward":
                 aux = self.aux_network(rep)
             elif self.use_aux == "sf":
                 aux = self.aux_network(rep)
-            elif self.use_aux == "sf+reward":
-                aux = self.aux_network(rep)
-                reward = self.reward_network(rep)
+                next_rep = self.next_state_rep(rep)
             elif self.use_aux == "ir":
                 aux = self.aux_network(rep)
             elif self.use_aux == "virtual-reward-1" or self.use_aux == "virtual-reward-5":
@@ -150,4 +146,4 @@ class Network(nn.Module):
         x = F.relu(self.q_network_fc2(x))
         x = self.q_network_fc3(x)
 
-        return [x, aux, rep, reward]
+        return [x, aux, rep, next_rep]

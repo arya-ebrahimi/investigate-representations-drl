@@ -145,41 +145,18 @@ class Agent():
             if self.args.use_aux == 'sf':
                 aux_return = net_return[1]
                 representation_st = net_return[2]
-            
+                next_state_rec = net_return[3]
+
                 with torch.no_grad(): 
                     next_state_aux_return = self.target_net(next_state_batch)[1].gather(1, next_action_batch)
                 
                 aux_loss = nn.MSELoss()
+                next_rep_loss = nn.MSELoss()
+
                 loss_to_add = self.args.aux_loss_weight * aux_loss(aux_return, representation_st + self.args.gamma * next_state_aux_return) 
 
-                loss = loss + loss_to_add
-                    
-                
-            if self.args.use_aux == 'sf+reward':
-                aux_return = net_return[1]
-                representation_st = net_return[2]
-                reward_st = net_return[3]
-               
-                with torch.no_grad(): 
-                    next_state_aux_return = self.target_net(next_state_batch)[1].gather(1, next_action_batch)
-                
-                aux_loss = nn.MSELoss()
-                reward_loss = nn.MSELoss()
-                loss_to_add = self.args.aux_loss_weight * aux_loss(aux_return, representation_st + self.args.gamma * next_state_aux_return) 
-                rb = torch.reshape(reward_batch, (self.args.batch_size, -1))
-
-                loss = loss + loss_to_add + reward_loss(reward_st, rb)
-                    
+                loss = loss + loss_to_add + next_rep_loss(next_state_rec, next_state_batch)
                            
-            if self.args.use_aux == 'da':
-                state_rep = net_return[2]
-                with torch.no_grad(): 
-                    next_state_aux_return = self.policy_net(next_state_batch)
-                    next_rep = next_state_aux_return[2]
-                    
-                aux_loss = nn.MSELoss()
-
-                loss = loss + aux_loss (state_rep, next_rep)
                 
             if self.args.use_aux == 'virtual-reward-1' or self.args.use_aux == 'virtual-reward-5':
                 virtual_reward_batch = torch.cat(batch.virtual_reward)
