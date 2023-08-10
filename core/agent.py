@@ -26,6 +26,7 @@ class Agent():
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.id = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
         self.model_dir = Path('.models')
+        self.reward_dir = Path('.rewards')
         self.rewards=[]
         
         if self.args.use_aux == 'sf' or self.args.use_aux == 'sf+reward' or self.args.use_aux=='virtual-reward-1' or self.args.use_aux=='virtual-reward-5':
@@ -36,6 +37,8 @@ class Agent():
         
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
+        if not os.path.exists(self.reward_dir):
+            os.makedirs(self.reward_dir)
             
         self.action_space = env.action_space.n
         
@@ -189,7 +192,7 @@ class Agent():
     
     def _save(self):
         if self.args.save_rewards:
-            with open(f'{self.model_dir}/rewards/rewards_{self.id}.pkl', 'wb') as fp:
+            with open(f'{self.reward_dir}/rewards_{self.id}.pkl', 'wb') as fp:
                 pickle.dump(self.reward_in_episode, fp)
                         
                 
@@ -263,7 +266,9 @@ class Agent():
                         consecutive_episodes += 1
                     else:
                         consecutive_episodes = 0
-                    self.plot_rewards()
+                    
+                    if self.args.plot_during_training:
+                        self.plot_rewards()
                     break
             
             if consecutive_episodes == self.args.consecutive_episodes:
@@ -276,10 +281,11 @@ class Agent():
             
             if i % self.args.save_ratio == 0:
                 self._save()
-                    
-        self.plot_rewards(show_result=True)
-        plt.ioff()
-        plt.show()
+        
+        if self.args.plot_during_training:
+            self.plot_rewards(show_result=True)
+            plt.ioff()
+            plt.show()
         
         
         

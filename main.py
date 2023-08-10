@@ -19,9 +19,10 @@ def main(args):
     else:
         env = gym.make('core:MazEnv-v0', goal_mode=args.goal_mode)
     
-    env.reset()
-    agent = Agent(env=env, args=args)
-    agent.train()
+    for i in range(args.runs):
+        env.reset()
+        agent = Agent(env=env, args=args)
+        agent.train()
 
 
 if __name__ == "__main__":
