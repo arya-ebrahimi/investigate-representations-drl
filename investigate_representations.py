@@ -52,7 +52,14 @@ def orthogonality(env, model):
 @hydra.main(config_path="config", config_name="transfer_config.yaml", version_base=None)
 def main(args):
     model_path = args.model_path
-    env = gym.make('core:MazEnv-v0', goal_mode=args.goal_mode)
+    
+    if args.use_aux == 'virtual-reward-1':
+        env = gym.make('core:MazEnv-v0', goal_mode=args.goal_mode, virtual_goal=1)
+    elif args.use_aux == 'virtual-reward-5':
+        env = gym.make('core:MazEnv-v0', goal_mode=args.goal_mode, virtual_goal=2)
+    else:
+        env = gym.make('core:MazEnv-v0', goal_mode=args.goal_mode)
+    
     model = Agent(env=env, args=args)
     
 
@@ -61,7 +68,7 @@ def main(args):
     
     print('complexity reduction: ', complexity_reduction())
     
-    # print('sparsity: ', sparsity(env, model))
+    print('sparsity: ', sparsity(env, model))
     print(orthogonality(env, model))
 
 

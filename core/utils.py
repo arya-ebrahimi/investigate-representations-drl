@@ -32,7 +32,7 @@ def generate_random_trajectories(env:gym.Env, n=1000):
             state = state.transpose((2, 0, 1))
             action = env.action_space.sample()
             observation, reward, terminated, truncated, _ = env.step(action)
-            buffer.push(state, action, observation, reward, None)
+            buffer.push(state, action, observation, reward, None, None)
             t+=1
             done = terminated or truncated or t>100
             
