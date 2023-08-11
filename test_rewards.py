@@ -12,7 +12,7 @@ fig = plt.figure()
 plt.clf()
 colors=['blue', 'red', 'green', 'yellow', 'magenta', 'cyan']
 
-for index, path in enumerate(['no_aux', 'ir', 'rp', 'vvf1', 'vvf5']):
+for index, path in enumerate(['no_aux', 'ir', 'rp', 'vvf1', 'vvf5', 'sf']):
     
     if path == 'no_aux':
         name = 'No AUX'
