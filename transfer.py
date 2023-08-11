@@ -16,18 +16,20 @@ def main(args):
         env = gym.make('core:MazEnv-v0', goal_mode=args.goal_mode, virtual_goal=2)
     else:
         env = gym.make('core:MazEnv-v0', goal_mode=args.goal_mode)
-    model = Agent(env=env, args=args)
     
+    for i in range(args.runs):
+        model = Agent(env=env, args=args)
+        
 
-    model.target_net.load_state_dict(torch.load(model_path))
-    model.policy_net.load_state_dict(torch.load(model_path))
-    
-    # The first 8 params are weights and biases of representation network
-    for i, param in enumerate(model.policy_net.parameters()):
-        if i < 8:
-            param.requires_grad = False
-    
-    model.train()
+        model.target_net.load_state_dict(torch.load(model_path))
+        model.policy_net.load_state_dict(torch.load(model_path))
+        
+        # The first 8 params are weights and biases of representation network
+        for i, param in enumerate(model.policy_net.parameters()):
+            if i < 8:
+                param.requires_grad = False
+        
+        model.train()
 
 if __name__ == "__main__":
     main()
