@@ -1,6 +1,6 @@
-runs: 1
-max_episodes: 15000
-plot_during_training: True
+runs: 5
+max_episodes: 5000
+plot_during_training: False
 save_ratio: 500
 batch_size: 128
 gamma: 0.99
@@ -12,12 +12,12 @@ learning_rate: 1e-4
 horizon: 100
 tau: 0.005
 print_ratio: 100
-save_model: False
-save_rewards: False
+save_model: True
+save_rewards: True
 use_fta: False
 soft_target_update: True
 # use_aux: "no_aux", "ir", "reward", "sf", "virtual-reward-1", "virtual-reward-5"
-use_aux: "sf"
+use_aux: "virtual-reward-5"
 # aux_loss_weight:
 #   ir, sf : 1e-4
 #   reward: 1
