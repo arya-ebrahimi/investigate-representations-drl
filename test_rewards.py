@@ -8,7 +8,7 @@ import numpy as np
 sns.set_style("whitegrid", {'axes.grid' : True,
                             'axes.edgecolor':'black'})
 
-fig = plt.figure()
+fig = plt.figure(figsize=(16, 9))
 plt.clf()
 colors=['blue', 'red', 'green', 'yellow', 'magenta', 'cyan']
 
@@ -27,7 +27,7 @@ for index, path in enumerate(['no_aux', 'ir', 'rp', 'vvf1', 'vvf5', 'sf']):
     elif path == 'sf':
         name = 'SF'
         
-    files = glob.glob('.rewards/'+path+'/*')
+    files = glob.glob('.transfer_rewards/'+path+'/*')
     rewards = []
 
     max_len = 0
@@ -69,14 +69,15 @@ for index, path in enumerate(['no_aux', 'ir', 'rp', 'vvf1', 'vvf5', 'sf']):
     plt.fill_between(line[index*3+0].get_xdata(), line[index*3+1].get_ydata(), line[index*3+2].get_ydata(), color=colors[index], alpha=.15, label=name+' observed range')
 
 
-plt.xlabel('Episode')
-plt.ylabel('Reward')
+plt.xlabel('Episode', fontsize=14)
+plt.ylabel('Average Reward', fontsize=14)
 
-plt.title("Average reward for each training episode")
+plt.title("Average reward over 5 runs", fontsize=20)
 
 plt.legend(
-frameon=True, fancybox=True, loc="lower right")
+frameon=True, fancybox=True, loc="lower right", prop={'size': 18})
 
 sns.despine()
 plt.tight_layout()
-plt.show()
+plt.savefig('figures/train.png')
+# plt.show()
