@@ -1,12 +1,12 @@
 runs: 3
-max_episodes: 5000
+max_episodes: 15000
 plot_during_training: False
 save_ratio: 500
 batch_size: 128
 gamma: 0.99
 eps_start: 1.0
 eps_end: 0.05
-eps_decay: 40000
+eps_decay: 20000
 target_update: 1000
 learning_rate: 1e-4
 horizon: 100
@@ -14,14 +14,14 @@ tau: 0.005
 print_ratio: 100
 save_model: True
 save_rewards: True
-use_fta: False
+use_fta: True
 soft_target_update: True
 # use_aux: "no_aux", "ir", "reward", "sf", "virtual-reward-1", "virtual-reward-5"
 use_aux: "ir"
 # aux_loss_weight:
 #   ir, sf : 1e-4
 #   reward: 1
-aux_loss_weight: 1e-4
+aux_loss_weight: 1
 # goal_mode: {0: default goal, 1: similar task, 2: more dificult task}
 goal_mode: 0
 # finish the training after number of consecutive episodes with reward of 1

@@ -17,13 +17,13 @@ use_fta: True
 soft_target_update: True
 save_rewards: True
 # use_aux: "no_aux", "ir", "reward", "sf", "virtual-reward-1", "virtual-reward-5"
-use_aux: "no_aux"
+use_aux: "virtual-reward-5"
 # aux_loss_weight:
 #   ir, sf : 1e-4
 #   reward: 1
 aux_loss_weight: 1e-4
 # goal_mode: {0: default goal, 1: similar task, 2: more dificult task}
-goal_mode: 2
+goal_mode: 1
 # finish the training after number of consecutive episodes with reward of 1
 consecutive_episodes: 100
-model_path: ".models/no_aux/pytorch_2023-08-10_08:37.pt"
+model_path: ".models/fta/vvf5/pytorch_2023-08-10_11:22.pt"

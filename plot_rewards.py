@@ -8,7 +8,7 @@ import numpy as np
 sns.set_style("whitegrid", {'axes.grid' : True,
                             'axes.edgecolor':'black'})
 
-fig = plt.figure(figsize=(16, 9))
+fig = plt.figure(figsize=(10, 7))
 plt.clf()
 colors=['blue', 'red', 'green', 'yellow', 'magenta', 'cyan']
 
@@ -27,7 +27,7 @@ for index, path in enumerate(['no_aux', 'ir', 'rp', 'vvf1', 'vvf5', 'sf']):
     elif path == 'sf':
         name = 'SF'
         
-    files = glob.glob('.transfer_rewards/'+path+'/*')
+    files = glob.glob('.rewards/fta/'+path+'/*')
     rewards = []
 
     max_len = 0
@@ -52,9 +52,9 @@ for index, path in enumerate(['no_aux', 'ir', 'rp', 'vvf1', 'vvf5', 'sf']):
     # sns.lineplot(data=rewards_t.numpy())
     rewards_t = rewards_t / len(rewards)
 
-    means = rewards_t.unfold(0, 50, 1).mean(1).view(-1)
-    mins = rewards_t.unfold(0, 50, 1).min(1)[0]
-    maxs = rewards_t.unfold(0, 50, 1).max(1)[0]
+    means = rewards_t[0:4000].unfold(0, 50, 1).mean(1).view(-1)
+    mins = rewards_t[0:4000].unfold(0, 50, 1).min(1)[0]
+    maxs = rewards_t[0:4000].unfold(0, 50, 1).max(1)[0]
 
     means = torch.cat((torch.zeros(49), means))
     mins = torch.cat((torch.zeros(49), mins))
@@ -66,16 +66,17 @@ for index, path in enumerate(['no_aux', 'ir', 'rp', 'vvf1', 'vvf5', 'sf']):
     sns.lineplot(mins.numpy(), alpha=0.0)
     c = sns.lineplot(maxs.numpy(), alpha=0.0)
     line = c.get_lines()
+    # if not (path == 'sf' or path=='ir'):
     plt.fill_between(line[index*3+0].get_xdata(), line[index*3+1].get_ydata(), line[index*3+2].get_ydata(), color=colors[index], alpha=.15, label=name+' observed range')
 
 
 plt.xlabel('Episode', fontsize=14)
 plt.ylabel('Average Reward', fontsize=14)
 
-plt.title("Average reward over 5 runs", fontsize=20)
+plt.title("Average reward over 5 runs using FTA", fontsize=16)
 
 plt.legend(
-frameon=True, fancybox=True, loc="lower right", prop={'size': 18})
+frameon=True, fancybox=True, loc="best", prop={'size': 12})
 
 sns.despine()
 plt.tight_layout()
