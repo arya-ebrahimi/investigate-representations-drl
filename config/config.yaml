@@ -1,4 +1,4 @@
-runs: 2
+runs: 5
 max_episodes: 15000
 plot_during_training: False
 save_ratio: 500
@@ -23,6 +23,6 @@ use_aux: "virtual-reward-5"
 #   reward: 1
 aux_loss_weight: 1e-4
 # goal_mode: {0: default goal, 1: similar task, 2: more dificult task}
-goal_mode: 1
+goal_mode: 2
 # finish the training after number of consecutive episodes with reward of 1
 consecutive_episodes: 100
