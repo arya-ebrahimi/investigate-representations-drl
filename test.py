@@ -4,6 +4,10 @@ from PIL import Image
 from core.agent import *
 import hydra
 
+def pixel_replication(img, k):
+    res = np.repeat(img, k, axis=0)
+    res = np.repeat(res, k, axis=1)
+    return res
 
 @hydra.main(config_path="config", config_name="transfer_config.yaml", version_base=None)
 def main(args):
@@ -22,7 +26,8 @@ def main(args):
         action = model.target_net(torch.tensor(state, device=model.device))[0].argmax().item()
 
         print(model.target_net(torch.tensor(state, device=model.device))[0])
-        image = Image.fromarray(state.transpose((1, 2, 0)), "RGB")
+        
+        image = Image.fromarray(pixel_replication(state.transpose((1, 2, 0)), 12), "RGB")
         images.append(image)
         print(action)
         next_state, reward, terminated, truncated, _ = env.step(action)
@@ -32,7 +37,7 @@ def main(args):
             break
         state = next_state
 
-    images[0].save('pillow_imagedraw.gif',
+    images[0].save('out.gif',
                 save_all=True, append_images=images[1:], optimize=False, duration=40, loop=0)
     
 

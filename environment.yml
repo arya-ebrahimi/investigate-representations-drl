@@ -1,4 +1,4 @@
-name: RL
+name: repdrl
 channels:
   - pytorch
   - nvidia
@@ -93,12 +93,28 @@ dependencies:
   - torchtriton=2.0.0=py310
   - torchvision=0.15.0=py310_cu118
   - typing_extensions=4.4.0=py310h06a4308_0
-  - tzdata=2023c=h04d1e81_0
   - urllib3=1.26.15=py310h06a4308_0
   - wheel=0.38.4=py310h06a4308_0
   - xz=5.2.10=h5eee18b_1
   - zlib=1.2.13=h5eee18b_0
   - zstd=1.5.5=hc292b87_0
   - pip:
+      - cloudpickle==2.2.1
+      - contourpy==1.1.0
+      - cycler==0.11.0
+      - farama-notifications==0.0.4
+      - fonttools==4.41.0
+      - gymnasium==0.29.0
+      - kiwisolver==1.4.4
+      - matplotlib==3.7.2
       - mpmath==1.2.1
+      - pandas==2.0.3
       - pyparsing==3.0.9
+      - python-dateutil==2.8.2
+      - pytz==2023.3
+      - pyyaml==6.0.1
+      - seaborn==0.12.2
+      - torchsummary==1.5.1
+      - tqdm==4.65.0
+      - tzdata==2023.3
+prefix: /home/arya/anaconda3/envs/repdrl
