@@ -1,6 +1,9 @@
 # Investigating the Representations & Auxiliary Tasks in DeepRL
 ----
 ## A minimal version of [Investigating the Properties of Neural Network Representations in Reinforcement Learning](https://arxiv.org/abs/2203.15955)
+----
+
+### Instructions on how to run and my bachelor thesis report will be added soon.
 
 After cloning the repository, use the `environment.yml` file to create the conda env with approprate packages.
 
