@@ -11,15 +11,23 @@ sns.set_style("whitegrid", {'axes.grid' : True,
 fig = plt.figure(figsize=(10, 7))
 
 MAX_RANGE=4000
-SAVE_NAME='figures/relu-fta-comparison.png'
+SAVE_NAME='figures/task2_transfer.png'
+PLOT_REGION=False
+TITLE='Average reward over 5 runs transfer task2'
+COLORS=2
+PATH1='.transfer_rewards/task2'
+PATH2='.rewards/task2'
 
-aux_paths = ['.rewards/train/fta/', '.rewards/train/relu/']
-labels = ['FTA', 'ReLU']
+aux_paths = [PATH1+'/', PATH2+'/']
+labels = ['', 'Scratch']
 
 plt.clf()
 
-# colors=['blue', 'red', 'green', 'yellow', 'magenta', 'cyan', 'skyblue', 'tomato', 'lime', 'khaki', 'orchid', 'teal']
-colors=['blue', 'slateblue', 'darkviolet', 'mediumblue', 'dodgerblue', 'skyblue', 'red', 'tomato', 'orange', 'coral', 'brown', 'chocolate']
+if COLORS==1:
+    colors=['blue', 'red', 'green', 'yellow', 'magenta', 'cyan', 'skyblue', 'tomato', 'lime', 'khaki', 'orchid', 'teal']
+else:
+    colors=['blue', 'slateblue', 'darkviolet', 'mediumblue', 'dodgerblue', 'skyblue', 'red', 'tomato', 'orange', 'coral', 'brown', 'chocolate']
+
 
 for j, aux_path in enumerate(aux_paths):
     for index, path in enumerate(['no_aux', 'ir', 'rp', 'vvf1', 'vvf5', 'sf']):
@@ -77,13 +85,14 @@ for j, aux_path in enumerate(aux_paths):
         c = sns.lineplot(maxs.numpy(), alpha=0.0)
         line = c.get_lines()
         # if not (path == 'sf' or path=='ir'):
-        # plt.fill_between(line[j*18+index*3+0].get_xdata(), line[j*18+index*3+1].get_ydata(), line[j*18+index*3+2].get_ydata(), color=colors[j*6+index], alpha=.15, label=name+' observed range')
+        if PLOT_REGION:
+            plt.fill_between(line[j*18+index*3+0].get_xdata(), line[j*18+index*3+1].get_ydata(), line[j*18+index*3+2].get_ydata(), color=colors[j*6+index], alpha=.15, label=name+' observed range')
 
 
 plt.xlabel('Episode', fontsize=14)
 plt.ylabel('Average Reward', fontsize=14)
 
-plt.title("ReLU and FTA", fontsize=16)
+plt.title(TITLE, fontsize=16)
 
 plt.legend(
 frameon=True, fancybox=True, loc="best", prop={'size': 12})
