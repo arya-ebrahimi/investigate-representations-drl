@@ -1,8 +1,8 @@
-runs: 5
+runs: 3
 max_episodes: 15000
-Transfer: True
+transfer: True
 save_ratio: 500
-plot_during_training: True
+plot_during_training: False
 batch_size: 128
 gamma: 0.99
 eps_start: 1.0
@@ -23,4 +23,4 @@ use_aux: "ir"
 goal_mode: 2
 # finish the training after number of consecutive episodes with reward of 1
 consecutive_episodes: 100
-model_path: ".models/fta/ir/pytorch_2023-08-10_09:37.pt"
+model_path: ".models/fta/ir/pytorch_2023-08-10_09:41.pt"
