@@ -1,5 +1,6 @@
 runs: 5
 max_episodes: 15000
+transfer: False
 plot_during_training: False
 save_ratio: 500
 batch_size: 128

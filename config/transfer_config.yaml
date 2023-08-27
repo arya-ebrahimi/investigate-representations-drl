@@ -1,7 +1,8 @@
-runs: 1
+runs: 5
 max_episodes: 15000
+Transfer: True
 save_ratio: 500
-plot_during_training: False
+plot_during_training: True
 batch_size: 128
 gamma: 0.99
 eps_start: 1.0
@@ -17,13 +18,9 @@ use_fta: True
 soft_target_update: True
 save_rewards: True
 # use_aux: "no_aux", "ir", "reward", "sf", "virtual-reward-1", "virtual-reward-5"
-use_aux: "no_aux"
-# aux_loss_weight:
-#   ir, sf : 1e-4
-#   reward: 1
-aux_loss_weight: 1e-4
-# goal_mode: {0: default goal, 1: similar task, 2: more dificult task}
-goal_mode: 1
+use_aux: "ir"
+
+goal_mode: 2
 # finish the training after number of consecutive episodes with reward of 1
 consecutive_episodes: 100
-model_path: ".models/fta/no_aux/pytorch_2023-08-10_08:42.pt"
+model_path: ".models/fta/ir/pytorch_2023-08-10_09:37.pt"

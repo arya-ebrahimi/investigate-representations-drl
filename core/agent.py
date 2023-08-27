@@ -132,48 +132,49 @@ class Agent():
         criterion = nn.MSELoss()
         loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
-        if self.args.use_aux != None:
-            if self.args.use_aux == 'ir':
-                aux_return = net_return[1]
-                aux_loss = nn.MSELoss()
-                
-                loss = loss + self.args.aux_loss_weight * aux_loss(aux_return, state_batch)
-                
-            if self.args.use_aux == 'reward':
-                aux_return = net_return[1]
-                aux_loss = nn.MSELoss()
-                rb = torch.reshape(reward_batch, (self.args.batch_size, -1))
-                loss = loss + aux_loss(aux_return, rb)
-                
-            if self.args.use_aux == 'sf':
-                aux_return = net_return[1]
-                representation_st = net_return[2]
-                next_state_rec = net_return[3]
+        if not self.args.transfer:
+            if self.args.use_aux != None:
+                if self.args.use_aux == 'ir':
+                    aux_return = net_return[1]
+                    aux_loss = nn.MSELoss()
+                    
+                    loss = loss + self.args.aux_loss_weight * aux_loss(aux_return, state_batch)
+                    
+                if self.args.use_aux == 'reward':
+                    aux_return = net_return[1]
+                    aux_loss = nn.MSELoss()
+                    rb = torch.reshape(reward_batch, (self.args.batch_size, -1))
+                    loss = loss + aux_loss(aux_return, rb)
+                    
+                if self.args.use_aux == 'sf':
+                    aux_return = net_return[1]
+                    representation_st = net_return[2]
+                    next_state_rec = net_return[3]
 
-                with torch.no_grad(): 
-                    next_state_aux_return = self.target_net(next_state_batch)[1].gather(1, next_action_batch)
-                
-                aux_loss = nn.MSELoss()
-                next_rep_loss = nn.MSELoss()
+                    with torch.no_grad(): 
+                        next_state_aux_return = self.target_net(next_state_batch)[1].gather(1, next_action_batch)
+                    
+                    aux_loss = nn.MSELoss()
+                    next_rep_loss = nn.MSELoss()
 
-                loss_to_add = self.args.aux_loss_weight * aux_loss(aux_return, representation_st + self.args.gamma * next_state_aux_return) 
+                    loss_to_add = self.args.aux_loss_weight * aux_loss(aux_return, representation_st + self.args.gamma * next_state_aux_return) 
 
-                loss = loss + loss_to_add + next_rep_loss(next_state_rec, next_state_batch)
-                           
-                
-            if self.args.use_aux == 'virtual-reward-1' or self.args.use_aux == 'virtual-reward-5':
-                virtual_reward_batch = torch.cat(batch.virtual_reward)
-                action_values = net_return[1].gather(1, action_batch)
-                with torch.no_grad():
-                    next_state_virtual_action_values = self.target_net(next_state_batch)[1].gather(1, next_action_batch)
-                    # print(next_state_virtual_action_values.shape)
-                    # print(next_state_virtual_action_values.squeeze().shape)
-                    bootstraped_value = (virtual_reward_batch + self.args.gamma * next_state_virtual_action_values.squeeze())
-                    # print(bootstraped_value.shape)
+                    loss = loss + loss_to_add + next_rep_loss(next_state_rec, next_state_batch)
+                            
+                    
+                if self.args.use_aux == 'virtual-reward-1' or self.args.use_aux == 'virtual-reward-5':
+                    virtual_reward_batch = torch.cat(batch.virtual_reward)
+                    action_values = net_return[1].gather(1, action_batch)
+                    with torch.no_grad():
+                        next_state_virtual_action_values = self.target_net(next_state_batch)[1].gather(1, next_action_batch)
+                        # print(next_state_virtual_action_values.shape)
+                        # print(next_state_virtual_action_values.squeeze().shape)
+                        bootstraped_value = (virtual_reward_batch + self.args.gamma * next_state_virtual_action_values.squeeze())
+                        # print(bootstraped_value.shape)
 
-                aux_loss = nn.MSELoss()       
-                
-                loss = loss + aux_loss(action_values, bootstraped_value.unsqueeze(1))
+                    aux_loss = nn.MSELoss()       
+                    
+                    loss = loss + aux_loss(action_values, bootstraped_value.unsqueeze(1))
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
