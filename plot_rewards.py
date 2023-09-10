@@ -11,14 +11,19 @@ sns.set_style("whitegrid", {'axes.grid' : True,
 fig = plt.figure(figsize=(10, 7))
 
 MAX_RANGE=4000
-SAVE_NAME='figures/task1_transfer.png'
+SAVE_NAME='figures/train_relu.png'
 PLOT_REGION=False
-TITLE='Average reward over 5 runs transfer task1'
-COLORS=2
-PATH1='.transfer_rewards/task1'
-PATH2='.rewards/task1'
+TITLE='Average reward over 5 runs using FTA'
+COLORS=1
+PATH1='.rewards/train/relu'
+PATH2=''
 
-aux_paths = [PATH1+'/', PATH2+'/']
+if PATH2 != '':
+    aux_paths = [PATH1+'/', PATH2+'/']
+else:
+    aux_paths = [PATH1+'/']
+
+
 labels = ['', 'Scratch']
 
 plt.clf()
