@@ -5,7 +5,9 @@
 
 My bachelor project report is available at [ResearchGate](https://www.researchgate.net/publication/373818471_Investigating_Representations_and_Auxiliary_Tasks_in_DeepRL).
 
-![](out.gif)
+<p align="middle" >
+  <img src="figures/out.gif" title="Main Task" width="200" />
+</p>
 
 After cloning the repository, use the `environment.yml` file to create the conda env with approprate packages.
 
