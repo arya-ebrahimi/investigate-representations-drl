@@ -84,7 +84,7 @@ class MazEnv(gym.Env):
             walls[8:, 5] = 1
             walls[8, 9:] = 1
             walls[8:12, 9] = 1
-            walls[11, 9:14] = 1
+            walls[11, 9:12] = 1
             
             return walls
         

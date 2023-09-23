@@ -3,7 +3,9 @@
 ## A minimal version of [Investigating the Properties of Neural Network Representations in Reinforcement Learning](https://arxiv.org/abs/2203.15955)
 ----
 
-### Instructions on how to run and my bachelor thesis report will be added soon.
+My bachelor project report is available at [ResearchGate](https://www.researchgate.net/publication/373818471_Investigating_Representations_and_Auxiliary_Tasks_in_DeepRL).
+
+![](out.gif)
 
 After cloning the repository, use the `environment.yml` file to create the conda env with approprate packages.
 
@@ -18,5 +20,12 @@ or give it your desired name:
 conda env create --file environment.yml --name YourName
 conda activate YourName
 ```
+
+The hyperparameters and additional settigns, like auxiliary tasks, are available in config folder. After those are set, start the training process as follows:
+
+```bash
+python main.py
+```
+
 
 Refer to [my blog post](https://arya-ebrahimi.github.io/posts/fuzzy-tiling-activations/) for more information about FTA activation function.
