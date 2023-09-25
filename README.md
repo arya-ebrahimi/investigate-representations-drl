@@ -9,7 +9,7 @@ My bachelor project report is available at [ResearchGate](https://www.researchga
   <img src="figures/out.gif" title="Main Task" width="200" />
 </p>
 
-After cloning the repository, use the `environment.yml` file to create the conda env with approprate packages.
+After cloning the repository, use the `environment.yml` file to create the conda env with appropriate packages.
 
 ```bash
 conda env create --file environment.yml
@@ -23,11 +23,11 @@ conda env create --file environment.yml --name YourName
 conda activate YourName
 ```
 
-The hyperparameters and additional settigns, like auxiliary tasks, are available in config folder. After those are set, start the training process as follows:
+The hyperparameters and additional settings, like auxiliary tasks, are available in the config folder. After those are set, start the training process as follows:
 
 ```bash
 python main.py
 ```
 
 
-Refer to [my blog post](https://arya-ebrahimi.github.io/posts/fuzzy-tiling-activations/) for more information about FTA activation function.
+Refer to [my blog post](https://arya-ebrahimi.github.io/posts/fuzzy-tiling-activations/) for more information about the FTA activation function.
