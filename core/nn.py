@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from core.activations.fta import FTA
+import numpy as np
 
 class SFNetwork(nn.Module):
     def __init__(self, use_fta):
@@ -81,6 +82,33 @@ class VirtualValueFunction(nn.Module):
         x = self.q_network_fc3(x)
         
         return x
+    
+class RepresentationNetwork(nn.Module):
+    def __init__(self, use_fta):
+        super(RepresentationNetwork, self).__init__()
+        
+        self.use_fta = use_fta
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=4, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(32, 16, kernel_size=4, stride=2, padding=2)
+        self.flatten = nn.Flatten()
+        self.fc1 = nn.Linear(8*8*16, 32)
+        self.fta = FTA(tiles=20, bound_low=-2, bound_high=+2, eta=0.4, input_dim=32)
+    
+    def forward(self, x):
+        x = x/255.0
+        x = F.relu(self.conv1(x))
+
+        x = F.relu(self.conv2(x))
+        x = self.flatten(x)
+        x = x.reshape((-1, 1024))
+        
+        if self.use_fta:
+            rep = self.fta(self.fc1(x))
+        else:
+            rep = F.relu(self.fc1(x))
+        
+        return rep
+        
         
 class Network(nn.Module):
     
@@ -88,11 +116,7 @@ class Network(nn.Module):
         super(Network, self).__init__()
         self.use_fta = use_fta
         self.use_aux = use_aux
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=4, stride=1, padding=1)
-        self.conv2 = nn.Conv2d(32, 16, kernel_size=4, stride=2, padding=2)
-        self.flatten = nn.Flatten()
-        self.fc1 = nn.Linear(8*8*16, 32)
-        self.fta = FTA(tiles=20, bound_low=-2, bound_high=+2, eta=0.4, input_dim=32)
+        self.rep_net = RepresentationNetwork(use_fta=self.use_fta)
         if self.use_fta:
             self.q_network_fc1 = nn.Linear(640, 64)
         else:
@@ -113,18 +137,9 @@ class Network(nn.Module):
         self.q_network_fc3 = nn.Linear(64, 4)
         
     def forward(self, x):
-        x = x/255.0
-        x = F.relu(self.conv1(x))
-
-        x = F.relu(self.conv2(x))
-        x = self.flatten(x)
-        x = x.reshape((-1, 1024))
         
-        if self.use_fta:
-            rep = self.fta(self.fc1(x))
-        else:
-            rep = F.relu(self.fc1(x))
-        # representation built
+        rep = self.rep_net(x)
+        
         # auxilary network
         aux = None
         next_rep = None
@@ -147,3 +162,4 @@ class Network(nn.Module):
         x = self.q_network_fc3(x)
 
         return [x, aux, rep, next_rep]
+    

@@ -10,7 +10,7 @@ import matplotlib
 import math
 import datetime
 from core.utils import *
-from core.nn import Network
+from core.nn import Network, ActorCritic
 import pickle
 
 is_ipython = 'inline' in matplotlib.get_backend()
@@ -287,6 +287,4 @@ class Agent():
             self.plot_rewards(show_result=True)
             plt.ioff()
             plt.show()
-        
-        
         

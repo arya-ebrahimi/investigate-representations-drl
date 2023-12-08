@@ -27,7 +27,7 @@ def main(args):
 
         print(model.target_net(torch.tensor(state, device=model.device))[0])
         
-        image = Image.fromarray(pixel_replication(state.transpose((1, 2, 0)), 12), "RGB")
+        image = Image.fromarray(pixel_replication(state.transpose((1, 2, 0)), 24), "RGB")
         images.append(image)
         print(action)
         next_state, reward, terminated, truncated, _ = env.step(action)
@@ -37,7 +37,7 @@ def main(args):
             break
         state = next_state
 
-    images[0].save('out.gif',
+    images[0].save('out1.gif',
                 save_all=True, append_images=images[1:], optimize=False, duration=40, loop=0)
     
 
