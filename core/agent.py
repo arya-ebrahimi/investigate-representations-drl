@@ -133,6 +133,12 @@ class Agent():
                 display.display(plt.gcf())
                 
     def optimize(self, i):
+        
+        '''
+        OPTIMIZATION
+        '''
+        
+        # check if replay buffer has enough transition samples
         if len(self.memory) < self.args.batch_size:
             return
         transitions = self.memory.sample(self.args.batch_size)
@@ -155,7 +161,7 @@ class Agent():
             next_state_batch = torch.cat(batch.next_state)
             
 
-        # [x, aux, rep, reward]
+        # the net_return is in the form of -> [x, aux, rep, reward]
         net_return = self.policy_net(state_batch)
         state_action_values = net_return[0].gather(1, action_batch)
 
@@ -163,26 +169,36 @@ class Agent():
         with torch.no_grad():
             next_state_values[non_final_mask] = self.target_net(non_final_next_states)[0].max(1)[0]
             
-        # Compute the expected Q values
+        # Compute the bootstraped Q values
         expected_state_action_values = (next_state_values * self.args.gamma) + reward_batch
  
         criterion = nn.MSELoss()
+        
+        # calcualte the loss -> make state_action_values more like bootstraped values
         loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
+        # if it is not a transfer task, then we might have some auxiliary tasks as well
         if not self.args.transfer:
+            
+            # check if we have auxiliary tasks and calculate their losses
+            # we add the auxiliary losses to the main loss (there might be a special weight for each which is set in config.yaml)
             if self.args.use_aux != None:
+                
+                # Input Reconstruction auxiliary task
                 if self.args.use_aux == 'ir':
                     aux_return = net_return[1]
                     aux_loss = nn.MSELoss()
                     
                     loss = loss + self.args.aux_loss_weight * aux_loss(aux_return, state_batch)
-                    
+                
+                # Reward Prediction auxiliary task
                 if self.args.use_aux == 'reward':
                     aux_return = net_return[1]
                     aux_loss = nn.MSELoss()
                     rb = torch.reshape(reward_batch, (self.args.batch_size, -1))
                     loss = loss + aux_loss(aux_return, rb)
                     
+                # Successor Features auxiliary task
                 if self.args.use_aux == 'sf':
                     aux_return = net_return[1]
                     representation_st = net_return[2]
@@ -198,20 +214,18 @@ class Agent():
 
                     loss = loss + loss_to_add + next_rep_loss(next_state_rec, next_state_batch)
                             
-                    
+                # Virtual Value Functions auxiliary tasks
                 if self.args.use_aux == 'virtual-reward-1' or self.args.use_aux == 'virtual-reward-5':
                     virtual_reward_batch = torch.cat(batch.virtual_reward)
                     action_values = net_return[1].gather(1, action_batch)
                     with torch.no_grad():
                         next_state_virtual_action_values = self.target_net(next_state_batch)[1].gather(1, next_action_batch)
-                        # print(next_state_virtual_action_values.shape)
-                        # print(next_state_virtual_action_values.squeeze().shape)
                         bootstraped_value = (virtual_reward_batch + self.args.gamma * next_state_virtual_action_values.squeeze())
-                        # print(bootstraped_value.shape)
 
                     aux_loss = nn.MSELoss()       
                     
                     loss = loss + aux_loss(action_values, bootstraped_value.unsqueeze(1))
+        
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
@@ -221,6 +235,9 @@ class Agent():
         
     
     def _save(self):
+        '''
+        save model and rewards in predefined directories
+        '''
         if self.args.save_rewards:
             with open(f'{self.reward_dir}/rewards_{self.id}.pkl', 'wb') as fp:
                 pickle.dump(self.reward_in_episode, fp)
@@ -230,6 +247,16 @@ class Agent():
             torch.save(self.target_net.state_dict(), f'{self.model_dir}/pytorch_{self.id}.pt')
     
     def train(self):
+        
+        '''
+        The main training loop of our agent
+        
+        iterates for max_episodes or reaching a number of consecutive sucseeful episodes with a reward of 1
+        this can be set in config.yaml file
+        
+        self.optimize if called in each iteration to optimize the agent's networks
+        '''
+        
         consecutive_episodes = 0
         for i in trange(self.args.max_episodes):
             reward_in_episode = 0
@@ -243,8 +270,7 @@ class Agent():
                     if t > 0:
                         if self.args.use_aux == 'virtual-reward-1' or self.args.use_aux == 'virtual-reward-5':
                             virtual_reward = torch.tensor([info['virtual-reward']], device=self.device)
-                            # print('virtual_reward', virtual_reward)
-                            # print('reward', reward)
+
                             self.memory.push(previous_state, previous_action, state, reward, action, virtual_reward)
                             self.optimize(i)
                         else:
@@ -261,11 +287,7 @@ class Agent():
 
                 # Store the transition in memory
                 if not self.need_next:
-                    # if self.args.use_aux == 'virtual-reward-1' or self.args.use_aux == 'virtual-reward-5':
-                    #     virtual_reward = torch.tensor([info['virtual-reward']], device=self.device)
-                    #     self.memory.push(state, action, next_state, reward, None, virtual_reward)
-                    #     self.optimize(i)
-                    # else:
+
                     self.memory.push(state, action, next_state, reward, None, None)
                     self.optimize(i)
                 
