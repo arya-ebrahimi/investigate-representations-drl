@@ -4,6 +4,17 @@ import numpy as np
 
 
 class FTA:
+    
+    '''
+    FUZZY TILING ACTIVATION
+    
+    GPU utilized version of FTA
+    please refer to the main paper https://arxiv.org/abs/1911.08068v3 for more information about the parameters of 
+    this activation function.
+    
+    '''
+    
+    
     def __init__(self, tiles, bound_low, bound_high, eta, input_dim):
         self.n_tilings = 1
         self.n_tiles = tiles

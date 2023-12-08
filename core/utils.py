@@ -21,6 +21,22 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory)
     
+def pixel_replication(img, k):
+    
+    '''
+    pixel replication to increase the size of images
+    
+    inputs: 
+        -img: image of the environment
+        -k: numbe of rows and columns to be repeated 
+        
+    outputs:
+        -res: upscaled image
+    '''
+    res = np.repeat(img, k, axis=0)
+    res = np.repeat(res, k, axis=1)
+    return res
+    
     
 def generate_random_trajectories(env:gym.Env, n=1000):
     buffer = ReplayMemory(capacity=1000000)

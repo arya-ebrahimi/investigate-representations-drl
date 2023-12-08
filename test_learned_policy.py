@@ -4,10 +4,10 @@ from PIL import Image
 from core.agent import *
 import hydra
 
-def pixel_replication(img, k):
-    res = np.repeat(img, k, axis=0)
-    res = np.repeat(res, k, axis=1)
-    return res
+from core.utils import pixel_replication
+
+# TEST LEARNED POLICIES AND CREATE GIF OF ONE EPISODE
+
 
 @hydra.main(config_path="config", config_name="transfer_config.yaml", version_base=None)
 def main(args):

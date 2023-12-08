@@ -1,7 +1,7 @@
 import gymnasium as gym
 import numpy as np
 from PIL import Image
-
+from core.utils import pixel_replication
 
 # TEST ENVIRONMENTS IMAGES
 
@@ -9,21 +9,7 @@ from PIL import Image
 NAME_TRANSFER = 'transfer_tasks.png'  # name of transfer task image to be saved
 NAME_VIRTUAL = 'vf5.png'  # name of virtual task image to be saved  
 
-def pixel_replication(img, k):
-    
-    '''
-    pixel replication to increase the size of images
-    
-    inputs: 
-        -img: image of the environment
-        -k: numbe of rows and columns to be repeated 
-        
-    outputs:
-        -res: upscaled image
-    '''
-    res = np.repeat(img, k, axis=0)
-    res = np.repeat(res, k, axis=1)
-    return res
+
 
 def plot_virtual_tasks(virtual_task=1):
     

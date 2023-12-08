@@ -6,6 +6,8 @@ import hydra
 from core.utils import *
 import numpy as np
 
+# TEST RECONSTRUCTED OBSERVATION OF RECONSTRUCT AUXILIARY TASK
+
 
 @hydra.main(config_path="config", config_name="transfer_config.yaml", version_base=None)
 def main(args):
@@ -25,7 +27,6 @@ def main(args):
     state, _ = env.reset()
     images = []
     
-    # for i in range(100):
     state = state.transpose((2, 0, 1))
     action = model.target_net(torch.tensor(state, device=model.device))[0].argmax().item()
 
