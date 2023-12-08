@@ -10,13 +10,13 @@ sns.set_style("whitegrid", {'axes.grid' : True,
 
 fig = plt.figure(figsize=(10, 7))
 
-MAX_RANGE=4000
-SAVE_NAME='figures/train_relu.png'
-PLOT_REGION=False
-TITLE='Average reward over 5 runs using FTA'
-COLORS=1
-PATH1='.rewards/train/relu'
-PATH2=''
+MAX_RANGE=4000  # total number of episodes to include in the plot
+SAVE_NAME='figures/train_relu.png'  # where to save
+PLOT_REGION=False  # plot boundaries or not
+TITLE='Average reward over 5 runs using FTA'  # title of the plot
+COLORS=1  # which color plate to use (1 or 2 defined below (2 is for comparison))
+PATH1='.rewards/train/relu' # path to the saved rewards 1
+PATH2='' # path to the saved rewards 2 for comparison plots
 
 if PATH2 != '':
     aux_paths = [PATH1+'/', PATH2+'/']
@@ -33,6 +33,7 @@ if COLORS==1:
 else:
     colors=['blue', 'slateblue', 'darkviolet', 'mediumblue', 'dodgerblue', 'skyblue', 'red', 'tomato', 'orange', 'coral', 'brown', 'chocolate']
 
+# plot
 
 for j, aux_path in enumerate(aux_paths):
     for index, path in enumerate(['no_aux', 'ir', 'rp', 'vvf1', 'vvf5', 'sf']):
@@ -72,7 +73,7 @@ for j, aux_path in enumerate(aux_paths):
             tt[:r.shape[0]] = r
             
             rewards_t += tt
-        # sns.lineplot(data=rewards_t.numpy())
+
         rewards_t = rewards_t / len(rewards)
 
         means = rewards_t[0:MAX_RANGE].unfold(0, 50, 1).mean(1).view(-1)
@@ -83,13 +84,12 @@ for j, aux_path in enumerate(aux_paths):
         mins = torch.cat((torch.zeros(49), mins))
         maxs = torch.cat((torch.zeros(49), maxs))
 
-        # print(mins)
-        # sns.lineplot(rewards_t.numpy(), alpha=0.5, label='true rewards averaged over 5 runs')
+
         sns.lineplot(means.numpy(), label=name+' '+labels[j], color=colors[j*6+index])
         sns.lineplot(mins.numpy(), alpha=0.0)
         c = sns.lineplot(maxs.numpy(), alpha=0.0)
         line = c.get_lines()
-        # if not (path == 'sf' or path=='ir'):
+        
         if PLOT_REGION:
             plt.fill_between(line[j*18+index*3+0].get_xdata(), line[j*18+index*3+1].get_ydata(), line[j*18+index*3+2].get_ydata(), color=colors[j*6+index], alpha=.15, label=name+' observed range')
 
@@ -105,4 +105,3 @@ frameon=True, fancybox=True, loc="best", prop={'size': 12})
 sns.despine()
 plt.tight_layout()
 plt.savefig(SAVE_NAME)
-# plt.show()
