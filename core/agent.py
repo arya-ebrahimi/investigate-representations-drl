@@ -10,7 +10,7 @@ import matplotlib
 import math
 import datetime
 from core.utils import *
-from core.nn import Network, ActorCritic
+from core.nn import Network
 import pickle
 
 is_ipython = 'inline' in matplotlib.get_backend()
@@ -20,21 +20,38 @@ if is_ipython:
 plt.ion()
 
 class Agent():
+    
+    '''
+    This class contains the information of an agent and its training process
+    
+    An instance of this class recieves a MazEnv environment and arguments (config file) as an input
+    and has following methods:
+    methods:
+        -select_action -> handles epsilon-greedy action selection
+        -plot_rewards -> plots each episode's reward online to see the trends of learning
+        -optimize -> handles the optimization part of neural networks (feed forward, calculate loss, backpropagation)
+        -train -> main loop of training
+        -_save -> a supplemantary function to save the networks and reward in predefined directories
+    
+    '''
+    
     def __init__(self, env, args):
-        self.args = args
+        self.args = args  # args contains config.yaml in config directory
         self.env = env
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.id = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
-        self.model_dir = Path('.models')
-        self.reward_dir = Path('.rewards')
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # select gpu if available
+        self.id = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")  # id for the name of agent that is going to be saved
+        self.model_dir = Path('.models')  # directory to save target networks
+        self.reward_dir = Path('.rewards')  # directory to save rewards
         self.rewards=[]
         
+        
+        # some auxiliary tasks require the next actions as well which is considered here
         if self.args.use_aux == 'sf' or self.args.use_aux == 'sf+reward' or self.args.use_aux=='virtual-reward-1' or self.args.use_aux=='virtual-reward-5':
             self.need_next = True
         else:
             self.need_next = False
         
-        
+        # check if save directories are not available to create them
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
         if not os.path.exists(self.reward_dir):
@@ -42,35 +59,56 @@ class Agent():
             
         self.action_space = env.action_space.n
         
+        # create policy and target networks
         self.policy_net = Network(self.args.use_fta, self.args.use_aux).to(self.device)
         self.target_net = Network(self.args.use_fta, self.args.use_aux).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         
+        # define loss function and optimizer with hyperparameters set in config.yaml file
         self.loss_fn = nn.SmoothL1Loss()
         self.optimizer = torch.optim.AdamW(self.policy_net.parameters(), lr=self.args.learning_rate, amsgrad=True)
         
+        # create the replay buffer
         self.memory = ReplayMemory(1000000)
         
         self.steps_done = 0
         self.reward_in_episode = []
         
     def select_action(self, state):
+        
+        '''
+        This function handles actions selection and also increases the steps_done which
+        decreases the epsilon for future action selections.
+        
+        inputs:
+            -state: current state of our agent
+        outputs:
+            -an action based on epsilon-greedy action selection
+        '''
+        
         sample = random.random()
         eps_threshold = self.args.eps_end + (self.args.eps_start - self.args.eps_end) * \
             math.exp(-1. * self.steps_done / self.args.eps_decay)
         self.steps_done += 1
         if sample > eps_threshold:
             with torch.no_grad():
-                # t.max(1) will return the largest column value of each row.
-                # second column on max result is index of where max element was
-                # found, so we pick action with the larger expected reward.
-
+                '''
+                t.max(1) will return the largest column value of each row.
+                second column on max result is index of where max element was
+                found, so we pick action with the larger expected reward.
+                '''
                 return self.policy_net(state)[0].max(1)[1].view(1, 1)
         else:
             return torch.tensor([[self.env.action_space.sample()]], device=self.device, dtype=torch.long)
             
             
     def plot_rewards(self, show_result=False):
+        
+        '''
+        This function handles the online reward plottings
+        To plot rewards, set plot_during_training to True in config.yaml file 
+        '''
+        
         plt.figure(1)
         rewards_t = torch.tensor(self.reward_in_episode, dtype=torch.float)
         if show_result:
@@ -120,15 +158,14 @@ class Agent():
         # [x, aux, rep, reward]
         net_return = self.policy_net(state_batch)
         state_action_values = net_return[0].gather(1, action_batch)
-        # print(state_action_values.shape)
 
         next_state_values = torch.zeros(self.args.batch_size, device=self.device)
         with torch.no_grad():
             next_state_values[non_final_mask] = self.target_net(non_final_next_states)[0].max(1)[0]
+            
         # Compute the expected Q values
         expected_state_action_values = (next_state_values * self.args.gamma) + reward_batch
  
-        # Compute Huber loss
         criterion = nn.MSELoss()
         loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
@@ -181,14 +218,6 @@ class Agent():
         # In-place gradient clipping
         torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
-
-
-    def _remember(self, state, action, next_state, reward, done):
-        self.memory.push(torch.cat([torch.from_numpy(state).float()], device=self.device),
-                        torch.tensor([action], device=self.device, dtype=torch.long),
-                        torch.cat([torch.from_numpy(next_state).float()], device=self.device),
-                        torch.tensor([reward], device=self.device),
-                        torch.tensor([done], device=self.device, dtype=torch.bool))
         
     
     def _save(self):
