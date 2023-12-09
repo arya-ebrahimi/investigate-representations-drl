@@ -84,6 +84,7 @@ The first step involves training the base model, and to achieve this, the main g
 
 The second step is to use the trained weights of the main model for the transfer tasks. Two transfer tasks are defined; one of them is close to the main tasks, and the other differs from the main task. The outcomes of transferring knowledge to train both of these methods are available in the report.
 
+The base FTA activation function which is used in this project is from [This Repo](https://github.com/hwang-ua/fta_pytorch_implementation/tree/main), which I've modified for GPU utilization.
 Also, you can refer to [my blog post](https://arya-ebrahimi.github.io/posts/fuzzy-tiling-activations/) for more information about the FTA activation function.
 
 ##### BibTex for citations:
