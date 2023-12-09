@@ -86,10 +86,13 @@ The second step is to use the trained weights of the main model for the transfer
 
 Also, you can refer to [my blog post](https://arya-ebrahimi.github.io/posts/fuzzy-tiling-activations/) for more information about the FTA activation function.
 
+##### BibTex for citations:
+```
 @phdthesis{ebrahimi2023investigating,
   title={Investigating Representations and Auxiliary Tasks in DeepRL},
   author={Ebrahimi, Arya},
   year={2023},
   school={Ferdowsi University of Mashhad}
 }
+```
 
