@@ -58,7 +58,7 @@ def generate_random_trajectories(env:gym.Env, n=1000):
 
 def create_distance_matrices(env, model, n=1000):
     random_transitions = generate_random_trajectories(env=env)
-    # print(random_transitions[0].state)
+
     d_v = np.zeros((n, n))
     d_s = np.zeros((n, n))
     

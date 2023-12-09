@@ -1,9 +1,8 @@
 # Investigating the Representations & Auxiliary Tasks in DeepRL
 ----
-## A minimal version of [Investigating the Properties of Neural Network Representations in Reinforcement Learning](https://arxiv.org/abs/2203.15955)
-----
 
-My bachelor project report is available at [ResearchGate](https://www.researchgate.net/publication/373818471_Investigating_Representations_and_Auxiliary_Tasks_in_DeepRL).
+
+The project report is available at [ResearchGate](https://www.researchgate.net/publication/373818471_Investigating_Representations_and_Auxiliary_Tasks_in_DeepRL).
 
 <p align="middle" >
   <img src="figures/out.gif" title="Main Task" width="200" />

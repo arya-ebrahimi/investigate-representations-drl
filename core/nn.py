@@ -4,6 +4,10 @@ import torch.nn.functional as F
 from core.activations.fta import FTA
 import numpy as np
 
+# Neural Networks Implementations
+
+
+# Successor Feature auxiliary head
 class SFNetwork(nn.Module):
     def __init__(self, use_fta):
         super().__init__()
@@ -23,7 +27,7 @@ class SFNetwork(nn.Module):
         return x
         
         
-
+# Reward Prediction auxiliary head
 class Reward(nn.Module):
     def __init__(self, use_fta):
         super().__init__()
@@ -43,6 +47,7 @@ class Reward(nn.Module):
         
         return x
         
+# Input Reconstruction auxiliary head
 class InputReconstruction(nn.Module):
     def __init__(self, use_fta):
         super(InputReconstruction, self).__init__()
@@ -62,6 +67,7 @@ class InputReconstruction(nn.Module):
         
         return x
     
+# Virtual Value Function auxiliary head
 class VirtualValueFunction(nn.Module):
     def __init__(self, use_fta):
         super(VirtualValueFunction, self).__init__()
@@ -83,6 +89,8 @@ class VirtualValueFunction(nn.Module):
         
         return x
     
+    
+# Main Representations of states network
 class RepresentationNetwork(nn.Module):
     def __init__(self, use_fta):
         super(RepresentationNetwork, self).__init__()
@@ -109,9 +117,18 @@ class RepresentationNetwork(nn.Module):
         
         return rep
         
-        
+
+
 class Network(nn.Module):
+    '''
+    this class combines the required networks of agents
     
+    schema:
+                                    --> Action Value Network
+    input image -> rep network --> 
+                                    --> Auxiliary Network
+    
+    '''
     def __init__(self, use_fta, use_aux=None):
         super(Network, self).__init__()
         self.use_fta = use_fta
@@ -156,6 +173,7 @@ class Network(nn.Module):
                 aux = self.aux_network(rep)
             else:
                 aux=None    
+                
         # value network
         x = F.relu(self.q_network_fc1(rep))
         x = F.relu(self.q_network_fc2(x))
