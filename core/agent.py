@@ -258,44 +258,54 @@ class Agent():
         '''
         
         consecutive_episodes = 0
+        
+        # iterate for args.max_episodes episode
+        # this loop will be terminated if agent reach a args.consecutive_episodes number of successful consecutive episodes
         for i in trange(self.args.max_episodes):
-            reward_in_episode = 0
-            state, info = self.env.reset()
-            state = state.transpose((2, 0, 1))
-            state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
+            
+            reward_in_episode = 0   # reward recieved in current episode
+            state, info = self.env.reset()  # initiate the first position of agent
+            state = state.transpose((2, 0, 1))  # torch uses BGR but our state is RGB
+            state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)   # convert numpy state to torch tensor
+            
+            # iterate over a number of steps untill reaching terminal state or horizon defined in config.yaml
             for t in count():
-                                
+                # select action based on an epsilon-greedy approach
                 action = self.select_action(state)
-                if self.need_next:
+                if self.need_next:  # check if the current auxiliary task requires next state and next action
                     if t > 0:
+                        # vvf auxiliary tasks also require virtual reward which is handled here and added to replay buffer
                         if self.args.use_aux == 'virtual-reward-1' or self.args.use_aux == 'virtual-reward-5':
                             virtual_reward = torch.tensor([info['virtual-reward']], device=self.device)
 
                             self.memory.push(previous_state, previous_action, state, reward, action, virtual_reward)
                             self.optimize(i)
+                        
                         else:
                             self.memory.push(previous_state, previous_action, state, reward, action, None)
                             self.optimize(i)
 
-
+                # step in the environment to recieve reward and next_state (observation)
                 observation, reward, terminated, truncated, info = self.env.step(action.item())
                 observation = observation.transpose((2, 0, 1))
 
+                # convert numpy arrays to tensors
                 reward = torch.tensor([reward], device=self.device)
                 done = terminated or truncated
                 next_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
 
-                # Store the transition in memory
+                # store transitions in memory
                 if not self.need_next:
-
                     self.memory.push(state, action, next_state, reward, None, None)
                     self.optimize(i)
                 
+                # update previous actions and next state
                 previous_action = action
                 previous_state = state
                 state = next_state
                 reward_in_episode += reward
                 
+                # update target network weights
                 if self.args.soft_target_update:
                     target_net_state_dict = self.target_net.state_dict()
                     policy_net_state_dict = self.policy_net.state_dict()
@@ -303,6 +313,7 @@ class Agent():
                         target_net_state_dict[key] = policy_net_state_dict[key]*self.args.tau + target_net_state_dict[key]*(1-self.args.tau)
                     self.target_net.load_state_dict(target_net_state_dict)
                 
+                # check if reached horizon to truncate
                 if done or t > self.args.horizon:
                     if self.need_next:
                         if self.args.use_aux == 'virtual-reward-1' or self.args.use_aux == 'virtual-reward-5':
@@ -323,6 +334,7 @@ class Agent():
                         self.plot_rewards()
                     break
             
+            # check for consecutive successful episodes
             if consecutive_episodes == self.args.consecutive_episodes:
                 self._save()
                 break
@@ -331,6 +343,7 @@ class Agent():
                 if i % self.args.target_update == 0:
                     self.target_net.load_state_dict(self.policy_net.state_dict())
             
+            # save networks with a frequency defined in config.yaml
             if i % self.args.save_ratio == 0:
                 self._save()
         
